@@ -1,0 +1,4 @@
+first   = 10.5 + 10;
+second  = 32 / 2 ^ 5;
+third   = first + second * 3;
+result  = sin(cos(third));

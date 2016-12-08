@@ -1,0 +1,7 @@
+DEF_OP(sum, 43, { return calculate(tree->get_lhs(), ht) + calculate(tree->get_rhs(), ht); })
+DEF_OP(sub, 45, { return calculate(tree->get_lhs(), ht) - calculate(tree->get_rhs(), ht); })
+DEF_OP(mul, 42, { return calculate(tree->get_lhs(), ht) * calculate(tree->get_rhs(), ht); })
+DEF_OP(power, 94, { return pow(calculate(tree->get_lhs(), ht), calculate(tree->get_rhs(), ht)); })
+DEF_OP(divide, 47, { return calculate(tree->get_lhs(), ht) / calculate(tree->get_rhs(), ht); })
+DEF_OP(sinus, 18, { return sin(calculate(tree->get_lhs(), ht)); })
+DEF_OP(cosinus, 19, { return cos(calculate(tree->get_lhs(), ht)); })

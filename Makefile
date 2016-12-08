@@ -17,4 +17,4 @@ hash_table.o: hash_table.cpp
 run: 
 	./calc ${TEST} 
 clean:
-	rm -rf *.o ./calc
+	rm -rf *.o 

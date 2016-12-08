@@ -18,3 +18,5 @@ run:
 	./calc ${TEST} 
 clean:
 	rm -rf *.o ./calc
+// код фигня, давай переписывай
+

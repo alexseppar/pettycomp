@@ -1,4 +1,4 @@
-CXX_OPT += -std=c++11 -Wall
+CXX_OPT = -std=c++11 -Wall
 
 all: compile
 

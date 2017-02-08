@@ -24,6 +24,7 @@ class hash_table final {
     ~hash_table();
     list_mem* 	find_mem(const char *name) const;
     void 	    add	(const char *name, double data);
+    void        print_info() const;
 };
 
 #endif

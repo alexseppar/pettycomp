@@ -4,20 +4,29 @@
 #include <cstdio>
 #include <cmath>
 #include <cstdlib>
+#include <cstring>
 
-static double calculate(tree_node *tree, hash_table *ht)
+static double calculate(tree_node *tree, hash_table *ht, bool *err)
 {
     if (typeid(*tree) == typeid(tree_node))
     {
-        calculate(tree->get_lhs(), ht);
-        calculate(tree->get_rhs(), ht);
+        calculate(tree->get_lhs(), ht, err);
+        calculate(tree->get_rhs(), ht, err);
         return 0;
     }
     else if (typeid(*tree) == typeid(eq_node))
-    {
-        if (ht->find_mem(static_cast<id_node*>(tree->get_lhs())->get_name()))
-            fprintf(stderr, "warning: redeclaration of '%s' \n", static_cast<id_node*>(tree->get_lhs())->get_name());
-        ht->add(static_cast<id_node*>(tree->get_lhs())->get_name(), calculate(tree->get_rhs(), ht));
+    { 
+        const char *tmp_name = static_cast<id_node*>(tree->get_lhs())->get_name();
+        #ifdef DEBUG__
+            fprintf(stdout, "%s = ", tmp_name);
+        #endif
+
+        ht->add(tmp_name, calculate(tree->get_rhs(), ht, err));
+        
+        #ifdef DEBUG__
+            fprintf(stdout, ";\nvarlist:\n");
+            ht->print_info();
+        #endif
         return 0;
     }
     else if (typeid(*tree) == typeid(operator_node))
@@ -36,21 +45,34 @@ static double calculate(tree_node *tree, hash_table *ht)
         #undef DEF_OP
     }
     else if (typeid(*tree) == typeid(num_node))
-        return static_cast<num_node*>(tree)->get_data();
+    {
+        double tmp_data = static_cast<num_node*>(tree)->get_data();
+        #ifdef DEBUG__
+            fprintf(stdout, "%lg ", tmp_data);
+        #endif
+        return tmp_data;
+    }
     else if (typeid(*tree) == typeid(id_node))
     {
         list_mem *tmp = ht->find_mem(static_cast<id_node*>(tree)->get_name());
         if (tmp == nullptr)
         {
-            fprintf(stderr, "variable %s was used but not defined yet \n", static_cast<id_node*>(tree)->get_name());
+            fprintf(stderr, "error: variable `%s' was used but not defined yet \n", static_cast<id_node*>(tree)->get_name());
+            *err = true;
             return -1;
         }
         else
+        {
+            #ifdef DEBUG__
+                fprintf(stdout, "%s ", tmp->get_name());
+            #endif
             return tmp->get_data();
+        }
     }
     else
     {
         fprintf(stderr, "unknown error \n");
+        *err = true;
         return -1;
     }
 }
@@ -58,7 +80,9 @@ static double calculate(tree_node *tree, hash_table *ht)
 bool interpretator::compute()
 {
     ht_ = new hash_table(100);
-    if (calculate(tree_, ht_) == 0)
+    bool err = false;
+    calculate(tree_, ht_, &err);
+    if (!err)
     {
         list_mem *tmp = ht_->find_mem("result");
         if (tmp)

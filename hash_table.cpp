@@ -1,5 +1,6 @@
 #include "hash_table.h"
 #include <cstring>
+#include <cstdio>
 
 list_mem::list_mem(const char *name, double data, list_mem *next) :
     name_   (name),
@@ -89,4 +90,25 @@ void hash_table::add(const char *name, double data)
             else
                 tmp->set_data(data);
         }
-    } 
+    }
+
+void hash_table::print_info() const
+{
+    unsigned count = 0;
+    bool     not_empty = false;
+    while (count < size_)
+    {
+        if (table_[count] == nullptr)
+            ++count;
+        else
+        {
+            not_empty = true;
+            fprintf(stdout, "\t%s\t=\t%lg \n", table_[count]->get_name(), table_[count]->get_data());
+            ++count;
+        }
+    }
+    if (not_empty)
+        fprintf(stdout, "\n");
+    else
+        fprintf(stdout, "no variables \n\n");
+}

@@ -1,19 +1,19 @@
-CXX_OPT = -std=c++11 -Wall
+CXXOPT =-std=c++11 -Wall -g3 
 
 all: compile
 
 compile: main.o tree_node.o parser.o interpretator.o hash_table.o 
-	$(CXX) $(CXX_OPT) main.o tree_node.o parser.o interpretator.o hash_table.o  -o calc
+	$(CXX) $(CXXOPT) main.o tree_node.o parser.o interpretator.o hash_table.o  -o calc
 main.o: main.cpp
-	$(CXX) -c $(CXX_OPT) main.cpp
+	$(CXX) -c $(CXXOPT) main.cpp
 tree_node.o: tree_node.cpp
-	$(CXX) -c $(CXX_OPT) tree_node.cpp
+	$(CXX) -c $(CXXOPT) tree_node.cpp
 parser.o: parser.cpp
-	$(CXX) -c $(CXX_OPT) parser.cpp
+	$(CXX) -c $(CXXOPT) parser.cpp
 interpretator.o: interpretator.cpp
-	$(CXX) -c $(CXX_OPT) interpretator.cpp
+	$(CXX) -c $(CXXOPT) interpretator.cpp
 hash_table.o: hash_table.cpp
-	$(CXX) -c $(CXX_OPT) hash_table.cpp
+	$(CXX) -c $(CXXOPT) hash_table.cpp
 check: 
 	./calc ${TEST} 
 clean:

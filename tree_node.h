@@ -31,10 +31,12 @@ class id_node : public tree_node {
 
 class operator_node : public tree_node {
     int type_;
+    int priority_;
     public:
     operator_node(tree_node *lhs, tree_node *rhs, int type);
     ~operator_node();
     int get_type() const;
+    int get_priority() const;
 };
 
 class eq_node : public tree_node {

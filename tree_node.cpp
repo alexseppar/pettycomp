@@ -1,4 +1,6 @@
 #include "tree_node.h"
+#include <cstdio>
+#include <cstdlib>
 
 tree_node::tree_node(tree_node *lhs, tree_node *rhs) :
     lhs_    (lhs),
@@ -69,9 +71,32 @@ id_node::~id_node()
 operator_node::operator_node(tree_node *lhs, tree_node *rhs, int type) :
     tree_node(lhs, rhs),
     type_   (type)
-    {}
+    {
+        switch (type)
+        {
+            case '+':     priority_ = 0;
+                        break;
+            case '-':     priority_ = 0;
+                        break;
+            case '*':     priority_ = 1;
+                        break;
+            case '/':     priority_ = 1;
+                        break;
+            case '^':     priority_ = 3;
+                        break;
+            case 18:    priority_ = 2;
+                        break;
+            case 19:    priority_ = 2;
+                        break;
+            default:    fprintf(stderr, "unknown error \n");
+                        exit(1);
+        }
+    }
 int operator_node::get_type() const {
         return type_;
+    }
+int operator_node::get_priority() const {
+        return priority_;
     }
 operator_node::~operator_node()
 {

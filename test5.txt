@@ -1,0 +1,10 @@
+a = 4;
+b = 0;
+if (e < 3) capture (t)
+    x = 4;
+endif
+if (a) 
+    r = 5;
+endif
+a = r;
+result = a;

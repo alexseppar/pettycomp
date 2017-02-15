@@ -1,0 +1,11 @@
+a = 1;
+b = 2;
+c = 3;
+if (b < a + c) capture (b,c)
+    b = b + 1;
+    if (b > a) capture (a)
+        a = b - a;
+    endif
+    c = b + a;
+endif
+result = c;

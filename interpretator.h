@@ -4,10 +4,23 @@
 #include "tree_node.h"
 #include "hash_table.h"
 
+class scope final {
+    unsigned    size_;
+    unsigned    last_;
+    hash_table  **tables_;
+    public:
+    scope(unsigned size);
+    ~scope();
+    void    add_like_prev();
+    void    add_new();
+    void    delete_last();
+    unsigned    get_last() const;
+    hash_table* operator[] (unsigned idx);
+};
+            
 
 class interpretator final {
     tree_node   *tree_;
-    hash_table  *ht_;
     double      answer_;
     public:
     interpretator(tree_node *tree);

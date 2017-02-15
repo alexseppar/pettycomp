@@ -1,0 +1,6 @@
+a = 1;
+b = 2;
+if (a - b) capture (a, b)
+    a = b + a;
+endif
+result = 2 * a - b ? a : b;

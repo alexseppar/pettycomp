@@ -1,0 +1,11 @@
+a = 1;
+b = 2;
+c = 3;
+max = a;
+if (max < b) 
+    max = b;
+endif
+if (max < c)
+    max = c;
+endif
+result = max;

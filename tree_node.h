@@ -10,6 +10,7 @@ class tree_node {
     virtual     ~tree_node();
     tree_node*  get_lhs() const;
     tree_node*  get_rhs() const;
+    void        clean_up();
 };
 
 class num_node : public tree_node {
@@ -22,11 +23,14 @@ class num_node : public tree_node {
 };
 
 class id_node : public tree_node {
-    const char *name_;
+    const char  *name_;
+    unsigned    line_;
     public:
-    id_node(tree_node *lhs, tree_node *rhs, const char *name);
+    id_node(tree_node *lhs, tree_node *rhs, const char *name, unsigned line);
     ~id_node();
     const char* get_name() const;
+    void        set_rhs(tree_node *rhs);
+    unsigned    get_line() const;
 };
 
 class operator_node : public tree_node {
@@ -43,6 +47,12 @@ class eq_node : public tree_node {
     public:
     eq_node(tree_node *lhs, tree_node *rhs);
     ~eq_node();
+};
+
+class if_node : public tree_node {
+    public:
+    if_node(tree_node *lhs, tree_node *rhs);
+    ~if_node();
 };
 
 #endif

@@ -16,7 +16,7 @@ int main(int argc, char **argv)
             return -1;
         interpretator intr(parserok.get_tree());
         if (intr.compute())
-            printf("%lf \n", intr.get_answer());
+            printf("%lf\n", intr.get_answer());
         else
             return -1;
     }

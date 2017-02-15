@@ -8,6 +8,12 @@ list_mem::list_mem(const char *name, double data, list_mem *next) :
     next_   (next)
     {}
 
+list_mem::list_mem(list_mem &mem) :
+    name_   (mem.get_name()),
+    data_   (mem.get_data()),
+    next_   (nullptr)
+    {}
+
 list_mem::~list_mem() {}
 
 const char* list_mem::get_name() const {
@@ -40,17 +46,43 @@ unsigned hash_table::hash(const char *str) const
         hash += (hash << 15);
         return hash;
     }
+
 hash_table::hash_table(unsigned size) :
     size_   (size)
     {
         table_ = new list_mem*[size_]();
     }
+
+hash_table::hash_table(hash_table &ht) :
+    size_   (ht.size_)
+    {
+        table_ = new list_mem*[size_]();
+        list_mem *tmp, *tmp_1;
+        for (unsigned i = 0; i < size_; ++i)
+        {
+            if (ht.table_[i])
+            {
+                tmp = ht.table_[i];
+                table_[i] = new list_mem(*tmp);
+                tmp_1 = table_[i];
+                while (tmp->get_next())
+                {
+                    tmp_1->set_next(new list_mem(*(tmp->get_next())));
+                    tmp_1 = tmp_1->get_next();
+                    tmp = tmp->get_next();
+                }
+            }
+            else
+                continue;
+        }
+    }
+
 hash_table::~hash_table()
     {
         for (unsigned long i = 0; i < size_; ++i)
         {
             list_mem *tmp, *tmp2;
-            if (tmp = table_[i])
+            if ((tmp = table_[i]) != nullptr)
             {
                 while (tmp)
                 {

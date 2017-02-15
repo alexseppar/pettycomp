@@ -1,0 +1,11 @@
+a = 1;
+b = 2;
+c = 3;
+max = a;
+if (max < b) capture (   a, b ,c, max) 
+    max = b;
+endif
+if (max < c) capture (*)
+    max = c;
+endif
+result = max;

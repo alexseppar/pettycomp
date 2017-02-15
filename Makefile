@@ -1,5 +1,4 @@
 CXXOPT =-std=c++11 -Wall -g3 ${ADD} 
-TEST = *.txt
 
 all: compile
 

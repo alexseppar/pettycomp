@@ -8,73 +8,96 @@
 
 static double calculate(tree_node *tree, scope &scope_, bool *err)
 {
-    if (typeid(*tree) == typeid(tree_node))
+    if (tree->get_type() == CONNECTION_NODE)
     {
         calculate(tree->get_lhs(), scope_, err);
         calculate(tree->get_rhs(), scope_, err);
         return 0;
     }
-    else if (typeid(*tree) == typeid(eq_node))
+    else if (tree->get_type() == EQ_NODE)
     { 
         const char *tmp_name = static_cast<id_node*>(tree->get_lhs())->get_name();
         #ifdef DEBUG__
-            fprintf(stdout, "%s = ", tmp_name);
+            fprintf(stderr, "%s = ", tmp_name);
         #endif
 
         scope_[scope_.get_last()]->add(tmp_name, calculate(tree->get_rhs(), scope_, err));
         
         #ifdef DEBUG__
-            fprintf(stdout, ";\nvarlist:\n");
+            fprintf(stderr, ";\nvarlist:\n");
             scope_[scope_.get_last()]->print_info();
         #endif
         return 0;
     }
-    else if (typeid(*tree) == typeid(operator_node))
+    else if (tree->get_type() == OP_NODE)
     {
         #define DEF_OP(name, num, code) \
         case num:   code\
                     break;
 
-        switch(static_cast<operator_node*>(tree)->get_type())
+        switch(static_cast<operator_node*>(tree)->get_operator_type())
         {
             #include "cmd.h"
 
-            default:    fprintf(stderr, "unknown error\n");
+            default:    fprintf(stdout, "unknown error\n");
                         exit(1);
         }
         #undef DEF_OP
     }
-    else if (typeid(*tree) == typeid(num_node))
+    else if (tree->get_type() == NUM_NODE)
     {
         double tmp_data = static_cast<num_node*>(tree)->get_data();
         #ifdef DEBUG__
-            fprintf(stdout, "%lg ", tmp_data);
+            fprintf(stderr, "%lg ", tmp_data);
         #endif
         return tmp_data;
     }
-    else if (typeid(*tree) == typeid(id_node))
+    else if (tree->get_type() == ID_NODE)
     {
         list_mem *tmp = scope_[scope_.get_last()]->find_mem(static_cast<id_node*>(tree)->get_name());
         #ifdef DEBUG__
-        fprintf(stdout, "%s ", static_cast<id_node*>(tree)->get_name());
+        fprintf(stderr, "%s ", static_cast<id_node*>(tree)->get_name());
         #endif
         if (tmp == nullptr)
         {
             fprintf(stdout, "error\nline %u: variable '%s' was not defined in this scope\n", static_cast<id_node*>(tree)->get_line(),\
                                 static_cast<id_node*>(tree)->get_name());
-            *err = true;
-            return -1;
+            exit(1);
         }
         else
             return tmp->get_data();
     }
-    else if (typeid(*tree) == typeid(if_node))
+    else if (tree->get_type() == IF_NODE)
     {
+        #ifdef DEBUG__
+        fprintf(stderr, "if (");
+        #endif
         if (calculate(tree->get_lhs(), scope_, err))
         {
+            #ifdef DEBUG__
+            fprintf(stderr, ") ");
+            #endif
             tree_node *tmp = tree->get_rhs()->get_rhs();
             if (tmp)
+            {
                 scope_.add_like_prev();
+                #ifdef DEBUG__
+                tree_node *tmp_ = tmp;
+                fprintf(stderr, "capture (");
+                while (tmp_)
+                {
+                    fprintf(stderr, "%s", static_cast<id_node*>(tmp_)->get_name());
+                    tmp_ = tmp_->get_rhs();
+                    if (tmp_)
+                        fprintf(stderr, ", ");
+                    else
+                    {
+                        fprintf(stderr, ")\n");
+                        break;
+                    }
+                }
+                #endif
+            }
             calculate(tree->get_rhs()->get_lhs(), scope_, err);
             if (tmp)
             {
@@ -90,13 +113,15 @@ static double calculate(tree_node *tree, scope &scope_, bool *err)
                     {
                         fprintf(stdout, "error\nline %u: variable '%s' was not defined in this scope (in capture block)\n", \
                                     static_cast<id_node*>(tmp)->get_line(), static_cast<id_node*>(tmp)->get_name());
-                        *err = true;
-                        return -1;
+                        exit(1);
                     }
                     tmp = tmp->get_rhs();
                 }
                 scope_.delete_last();
             }
+            #ifdef DEBUG__
+            fprintf(stderr, "endif\n");
+            #endif
             return 0;
         }
         return 0;
@@ -104,12 +129,10 @@ static double calculate(tree_node *tree, scope &scope_, bool *err)
     else
     {
         fprintf(stderr, "unknown error \n");
-        *err = true;
-        return -1;
+        exit(1);
     }
     fprintf(stderr, "unknown error \n");
-    *err = true;
-    return -1;
+    exit(1);
 }
 
 bool interpretator::compute()
@@ -143,19 +166,19 @@ static tree_node* copy_tree(tree_node *tree)
 {
     if (!tree)
         return nullptr;
-    if (typeid(*tree) == typeid(tree_node))
-        return new tree_node(copy_tree(tree->get_lhs()), copy_tree(tree->get_rhs()));
-    else if (typeid(*tree) == typeid(eq_node))
+    if (tree->get_type() == CONNECTION_NODE)
+        return new connection_node(copy_tree(tree->get_lhs()), copy_tree(tree->get_rhs()));
+    else if (tree->get_type() == EQ_NODE)
         return static_cast<tree_node*>(new eq_node(copy_tree(tree->get_lhs()), copy_tree(tree->get_rhs())));
-    else if (typeid(*tree) == typeid(num_node))
+    else if (tree->get_type() == NUM_NODE)
         return static_cast<tree_node*>(new num_node(nullptr, nullptr, static_cast<num_node*>(tree)->get_data()));
-    else if (typeid(*tree) == typeid(id_node))
+    else if (tree->get_type() == ID_NODE)
         return static_cast<tree_node*>(new id_node(nullptr, copy_tree(tree->get_rhs()),\
                                             static_cast<id_node*>(tree)->get_name(), static_cast<id_node*>(tree)->get_line()));
-    else if (typeid(*tree) == typeid(operator_node))
+    else if (tree->get_type() == OP_NODE)
         return static_cast<tree_node*>\
-        (new operator_node(copy_tree(tree->get_lhs()), copy_tree(tree->get_rhs()), static_cast<operator_node*>(tree)->get_type()));
-    else if (typeid(*tree) == typeid(if_node))
+        (new operator_node(copy_tree(tree->get_lhs()), copy_tree(tree->get_rhs()), static_cast<operator_node*>(tree)->get_operator_type()));
+    else if (tree->get_type() == IF_NODE)
         return static_cast<tree_node*>(new if_node(copy_tree(tree->get_lhs()), copy_tree(tree->get_rhs()))); 
     return nullptr;
 }

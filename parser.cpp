@@ -1,4 +1,3 @@
-#include "op_enum.h"
 #include "parser.h"
 #include <cstdio>
 #include <cstdlib>
@@ -7,155 +6,80 @@
 #include <ctype.h>
 #include <cmath>
 
-enum lexems {
-    NUM_LEX,
-    ID_LEX,
-    OP_LEX,
-    FULL_STOP,
-    END_OF_EXPR,
-    EQ_LEX,
-    CLOSE_BRACKET,
-    OPEN_BRACKET,
-    IF_LEX,
-    ENDIF_LEX,
-    CAPTURE_LEX,
-    COMMA_LEX
-};
 
 const unsigned MAX_STR = 20;
 
-unsigned lexem::get_line() const {
+lexem:: lexem(lex_type type, unsigned line, unsigned pos):
+type_   (type),
+line_   (line),
+pos_    (pos)
+{}
+
+lex_type lexem:: get_type() const {
+    return type_;
+}
+
+unsigned lexem:: get_pos() const {
+    return pos_;
+}
+
+unsigned lexem:: get_line() const {
     return line_;
 }
 
-id_lexem::id_lexem(const char *name, unsigned line) :
-    name_       (name)
-    {
-        line_ = line;
-    }
-
-id_lexem::~id_lexem() {}
-
-int id_lexem::get_type() const {
-        return ID_LEX;
-    }
-
-const char* id_lexem::get_name() const {
+const char* lexem:: get_name() const
+{
+    if (type_ == ID_LEX)
         return name_;
-    }
-
-num_lexem::num_lexem(double data, unsigned line) :
-    data_       (data)
-    {
-        line_ = line;    
-    }
-
-int num_lexem::get_type() const {
-        return NUM_LEX;
-    }
-
-double num_lexem::get_data() const {
-        return data_;
-    }
-
-int capture_lexem:: get_type() const {
-    return CAPTURE_LEX;
+    else
+        assert(0 && "invalid request for name");
 }
 
-int if_lexem:: get_type() const {
-    return IF_LEX;
-}
-
-int endif_lexem:: get_type() const {
-    return ENDIF_LEX;
-}
-
-capture_lexem::capture_lexem(unsigned line)
+double lexem:: get_val() const
 {
-    line_ = line;
+    if (type_ == NUM_LEX)
+        return val_;
+    else
+        assert(0 && "invalid request for value");
 }
 
-if_lexem::if_lexem(unsigned line)
+OP lexem:: get_operator_type() const
 {
-    line_ = line;
+    if (type_ == OP_LEX)
+        return op_type_;
+    else 
+        assert(0 && "invalid request for operator type");
 }
 
-endif_lexem::endif_lexem(unsigned line)
+void lexem:: set_val(double val)
 {
-    line_ = line;
+    if (type_ == NUM_LEX)
+        val_ = val;
+    else
+        assert(0 && "invalid request for setting val");
 }
 
-equality_lexem::equality_lexem(unsigned line)
+void lexem:: set_op_type(OP op_type)
 {
-    line_ = line;
+    if (type_ == OP_LEX)
+        op_type_ = op_type;
+    else
+        assert(0 && "invalid request for setting operator type");
 }
 
-comma_lexem::comma_lexem(unsigned line)
+void lexem:: set_name(const char* name)
 {
-    line_ = line;
+    if (type_ == ID_LEX)
+        name_ = name;
+    else
+        assert(0 && "invalid request for setting name");
 }
-
-open_bracket_lexem::open_bracket_lexem(unsigned line)
-{
-    line_ = line;
-}
-
-close_bracket_lexem::close_bracket_lexem(unsigned line)
-{
-    line_ = line;
-}
-
-end_of_expr_lexem::end_of_expr_lexem(unsigned line)
-{
-    line_ = line;
-}
-
-full_stop_lexem::full_stop_lexem(unsigned line)
-{
-    line_ = line;
-}
-
-operator_lexem::operator_lexem(int name, unsigned line) :
-name_       (name)
-{
-     line_ = line;   
-}
-
-int operator_lexem::get_type() const {
-        return OP_LEX;
-    }
-int operator_lexem::get_operator_type() const {
-        return name_;
-    }
-
-int equality_lexem::get_type() const {
-        return EQ_LEX;
-    }
-
-int open_bracket_lexem::get_type() const {
-        return OPEN_BRACKET;
-    }
-
-int close_bracket_lexem::get_type() const {
-        return CLOSE_BRACKET;
-    }
-
-int end_of_expr_lexem::get_type() const {
-        return END_OF_EXPR;
-    }
-
-int full_stop_lexem::get_type() const {
-        return FULL_STOP;
-    }
-
-int comma_lexem::get_type() const {
-        return COMMA_LEX;
-    }
 
 lexer::lexer(const char *file_name) :
 cur_token_      (nullptr),
 cur_line_       (1),
-cur_position_   (0)
+cur_position_   (0),
+lex_count_      (0)
 {
     assert(file_name);
     FILE *fp = fopen(file_name, "r");
@@ -192,7 +116,10 @@ void lexer::mov_to_next_token()
             *tmp == '\n')
     {
         if (*tmp == '\n')
+        {
+            lex_count_ = 0;
             ++cur_line_;
+        }
         ++tmp;
     }
     if (isdigit(*tmp))
@@ -219,7 +146,8 @@ void lexer::mov_to_next_token()
         }
         delete cur_token_;
         cur_position_ = tmp - info_;
-        cur_token_ = new num_lexem(cur_num, cur_line_);
+        cur_token_ = new lexem(NUM_LEX, cur_line_, ++lex_count_);
+        cur_token_->set_val(cur_num);
         return;
     }
     if (isalpha(*tmp))
@@ -242,7 +170,8 @@ void lexer::mov_to_next_token()
         {
             delete[] cur_name;
             delete cur_token_;
-            cur_token_ = new operator_lexem(OP_sinus, cur_line_);
+            cur_token_ = new lexem(OP_LEX, cur_line_, ++lex_count_);
+            cur_token_->set_op_type(OP_sinus);
             cur_position_ = tmp - info_;
             return;
         }
@@ -250,7 +179,8 @@ void lexer::mov_to_next_token()
         {
             delete[] cur_name;
             delete cur_token_;
-            cur_token_ = new operator_lexem(OP_cosinus, cur_line_);
+            cur_token_ = new lexem(OP_LEX, cur_line_, ++lex_count_);
+            cur_token_->set_op_type(OP_cosinus);
             cur_position_ = tmp - info_;
             return;
         }
@@ -258,7 +188,7 @@ void lexer::mov_to_next_token()
         {
             delete[] cur_name;
             delete cur_token_;
-            cur_token_ = new if_lexem(cur_line_);
+            cur_token_ = new lexem(IF_LEX, cur_line_, ++lex_count_);
             cur_position_ = tmp - info_;
             return;
         }
@@ -266,7 +196,7 @@ void lexer::mov_to_next_token()
         {
             delete[] cur_name;
             delete cur_token_;
-            cur_token_ = new endif_lexem(cur_line_);
+            cur_token_ = new lexem(ENDIF_LEX, cur_line_, ++lex_count_);
             cur_position_ = tmp - info_;
             return;
         }
@@ -274,13 +204,14 @@ void lexer::mov_to_next_token()
         {
             delete[] cur_name;
             delete cur_token_;
-            cur_token_ = new capture_lexem(cur_line_);
+            cur_token_ = new lexem(CAPTURE_LEX, cur_line_, ++lex_count_);
             cur_position_ = tmp - info_;
             return;
         }
         delete cur_token_;
         cur_position_ = tmp - info_;
-        cur_token_ = new id_lexem(cur_name, cur_line_);
+        cur_token_ = new lexem(ID_LEX, cur_line_, ++lex_count_);
+        cur_token_->set_name(cur_name);
         return;
     }
     #define ROUTINE \
@@ -291,19 +222,19 @@ void lexer::mov_to_next_token()
     switch (static_cast<int>(*tmp))
     {
         case '=':   ROUTINE
-                    cur_token_ = new equality_lexem(cur_line_);
+                    cur_token_ = new lexem(EQ_LEX, cur_line_, ++lex_count_);
                     return;
         case '(':   ROUTINE
-                    cur_token_ = new open_bracket_lexem(cur_line_);
+                    cur_token_ = new lexem(OPEN_BRACKET, cur_line_, ++lex_count_);
                     return;
         case ')':   ROUTINE
-                    cur_token_ = new close_bracket_lexem(cur_line_);
+                    cur_token_ = new lexem(CLOSE_BRACKET, cur_line_, ++lex_count_);
                     return;
         case ';':   ROUTINE
-                    cur_token_ = new end_of_expr_lexem(cur_line_);
+                    cur_token_ = new lexem(END_OF_EXPR, cur_line_, ++lex_count_);
                     return;
         case ',':   ROUTINE
-                    cur_token_ = new comma_lexem(cur_line_);
+                    cur_token_ = new lexem(COMMA_LEX, cur_line_, ++lex_count_);
                     return;
         default:    break;
     }
@@ -319,7 +250,8 @@ void lexer::mov_to_next_token()
         *tmp == ':')
     {
         delete cur_token_;
-        cur_token_ = new operator_lexem(static_cast<int>(*tmp++), cur_line_);
+        cur_token_ = new lexem(OP_LEX, cur_line_, ++lex_count_);
+        cur_token_->set_op_type(static_cast<OP>(*tmp++));
         cur_position_ = tmp - info_;
         return;
     }
@@ -328,7 +260,7 @@ void lexer::mov_to_next_token()
         delete[] info_;
         info_ = nullptr;
         delete cur_token_;
-        cur_token_ = new full_stop_lexem(cur_line_);
+        cur_token_ = new lexem(FULL_STOP, cur_line_, lex_count_);
         return;
     }
     fprintf(stderr, "line %u: synthax error (umknown symbol) %s\n", cur_line_, tmp);
@@ -340,7 +272,7 @@ tree_node* parser::get_trig()
     if (get_cur_token()->get_type() == OP_LEX)
     {
         tree_node *tmp;
-        switch (static_cast<operator_lexem*>(get_cur_token())->get_operator_type())
+        switch (get_cur_token()->get_operator_type())
         {
             case OP_sinus:      mov_to_next_token();
                                 assert(get_cur_token());
@@ -350,7 +282,7 @@ tree_node* parser::get_trig()
                                     tree_node *tmp_1 = get_expr();
                                     if (tmp_1 == nullptr)
                                         return nullptr;
-                                    tmp = static_cast<tree_node*>(new operator_node(tmp_1, nullptr, OP_sinus));
+                                    tmp = new operator_node(tmp_1, nullptr, OP_sinus);
                                     assert(get_cur_token());
                                     if (get_cur_token()->get_type() == CLOSE_BRACKET)
                                     {
@@ -377,7 +309,7 @@ tree_node* parser::get_trig()
                                     tree_node *tmp_2 = get_expr();
                                     if (tmp_2 == nullptr)
                                         return nullptr;
-                                    tmp = static_cast<tree_node*>(new operator_node(tmp_2, nullptr, OP_cosinus));
+                                    tmp = new operator_node(tmp_2, nullptr, OP_cosinus);
                                     assert(get_cur_token());
                                     if (get_cur_token()->get_type() == CLOSE_BRACKET)
                                     {
@@ -411,19 +343,17 @@ tree_node* parser::get_num()
 {
     if (get_cur_token()->get_type() == NUM_LEX)
     {
-        tree_node *tmp = static_cast<tree_node*>\
-                        (new num_node(nullptr, nullptr, static_cast<num_lexem*>(get_cur_token())->get_data()));
+        tree_node *tmp = new num_node(nullptr, nullptr, get_cur_token()->get_val());
         mov_to_next_token();
         return tmp;
     }
     else if (get_cur_token()->get_type() == OP_LEX &&
-             static_cast<operator_lexem*>(get_cur_token())->get_operator_type() == '-')
+             get_cur_token()->get_operator_type() == '-')
     {
         mov_to_next_token();
         if (get_cur_token()->get_type() == NUM_LEX)
         {
-            tree_node *tmp = static_cast<tree_node*>\
-            (new num_node(nullptr, nullptr, static_cast<num_lexem*>(get_cur_token())->get_data() * -1));
+            tree_node *tmp = new num_node(nullptr, nullptr, get_cur_token()->get_val() * -1);
             mov_to_next_token();
             return tmp;
         }
@@ -444,9 +374,7 @@ tree_node* parser::get_id()
 {
     if (get_cur_token()->get_type() == ID_LEX)
     {
-        tree_node *tmp = static_cast<tree_node*>\
-                         (new id_node(nullptr, nullptr, static_cast<id_lexem*>(get_cur_token())->get_name(),\
-                                        static_cast<id_lexem*>(get_cur_token())->get_line()));
+        tree_node *tmp = new id_node(nullptr, nullptr, get_cur_token()->get_name(), get_cur_token()->get_line());
         mov_to_next_token();
         return tmp;
     }
@@ -496,7 +424,7 @@ tree_node* parser::get_p()
         }
         else if (get_cur_token()->get_type() == OP_LEX)
         {
-            if (static_cast<operator_lexem*>(get_cur_token())->get_operator_type() == '-')
+            if (get_cur_token()->get_operator_type() == '-')
                 tmp = get_num();
             else
                 tmp = get_trig();
@@ -519,7 +447,7 @@ tree_node* parser::get_pow()
         return nullptr;
     assert(get_cur_token());
     while (get_cur_token()->get_type() == OP_LEX  &&
-           static_cast<operator_lexem*>(get_cur_token())->get_operator_type() == '^')
+           get_cur_token()->get_operator_type() == '^')
     {
         mov_to_next_token();
         tree_node *tmp_1 = get_p();
@@ -528,7 +456,7 @@ tree_node* parser::get_pow()
             delete tmp;
             return nullptr;
         }
-        tmp = static_cast<tree_node*>(new operator_node(tmp, tmp_1, '^'));
+        tmp = new operator_node(tmp, tmp_1, '^');
     }
     return tmp;
 }
@@ -540,10 +468,10 @@ tree_node* parser::get_term()
         return nullptr;
     assert(get_cur_token());
     while (get_cur_token()->get_type() == OP_LEX  &&
-          (static_cast<operator_lexem*>(get_cur_token())->get_operator_type() == '*'      ||
-           static_cast<operator_lexem*>(get_cur_token())->get_operator_type() == '/'))
+          (get_cur_token()->get_operator_type() == '*' ||
+           get_cur_token()->get_operator_type() == '/'))
     {
-        char type = static_cast<operator_lexem*>(get_cur_token())->get_operator_type();
+        char type = get_cur_token()->get_operator_type();
         mov_to_next_token();
         tree_node *tmp_1 = get_pow();
         if (tmp_1 == nullptr)
@@ -551,7 +479,7 @@ tree_node* parser::get_term()
             delete tmp;
             return nullptr;
         }
-        tmp = static_cast<tree_node*>(new operator_node(tmp, tmp_1, type));
+        tmp = new operator_node(tmp, tmp_1, type);
     }
     return tmp;
 }
@@ -563,12 +491,12 @@ tree_node* parser::get_expr()
         return nullptr;
     assert(get_cur_token());
     while (get_cur_token()->get_type() == OP_LEX &&
-        (static_cast<operator_lexem*>(get_cur_token())->get_operator_type() == '+' ||
-         static_cast<operator_lexem*>(get_cur_token())->get_operator_type() == '-' ||
-         static_cast<operator_lexem*>(get_cur_token())->get_operator_type() == '<' ||
-         static_cast<operator_lexem*>(get_cur_token())->get_operator_type() == '>'))
+        (get_cur_token()->get_operator_type() == '+' ||
+         get_cur_token()->get_operator_type() == '-' ||
+         get_cur_token()->get_operator_type() == '<' ||
+         get_cur_token()->get_operator_type() == '>'))
     {
-        char type = static_cast<operator_lexem*>(get_cur_token())->get_operator_type();
+        char type = get_cur_token()->get_operator_type();
         mov_to_next_token();
         tree_node *tmp_1 = get_term();
         if (tmp_1 == nullptr)
@@ -576,11 +504,11 @@ tree_node* parser::get_expr()
             delete tmp;
             return nullptr;
         }
-        tmp = static_cast<tree_node*>(new operator_node(tmp, tmp_1, type));
+        tmp = new operator_node(tmp, tmp_1, type);
         assert(get_cur_token());
     }
     if (get_cur_token()->get_type() == OP_LEX &&
-        static_cast<operator_lexem*>(get_cur_token())->get_operator_type() == '?')
+        get_cur_token()->get_operator_type() == '?')
     {
         mov_to_next_token();
         tree_node *tmp_1 = get_expr();
@@ -591,7 +519,7 @@ tree_node* parser::get_expr()
         }
         assert(get_cur_token());
         if (get_cur_token()->get_type() == OP_LEX &&
-            static_cast<operator_lexem*>(get_cur_token())->get_operator_type() == ':')
+            get_cur_token()->get_operator_type() == ':')
         {
             mov_to_next_token();
             tree_node *tmp_2 = get_expr();
@@ -601,8 +529,8 @@ tree_node* parser::get_expr()
                 delete tmp_1;
                 return nullptr;
             }
-            tmp_1 = static_cast<tree_node*>(new operator_node(tmp_1, tmp_2, ':'));
-            tmp = static_cast<tree_node*>(new operator_node(tmp, tmp_1, '?'));
+            tmp_1 = new connection_node(tmp_1, tmp_2);
+            tmp = new operator_node(tmp, tmp_1, '?');
             return tmp;
         }
         else
@@ -675,7 +603,7 @@ tree_node* parser::get_capture()
         else
         {
             if (get_cur_token()->get_type() == OP_LEX &&
-                 static_cast<operator_lexem*>(get_cur_token())->get_operator_type() == '*')
+                 get_cur_token()->get_operator_type() == '*')
             {
                 mov_to_next_token();
                 assert(get_cur_token());
@@ -683,7 +611,7 @@ tree_node* parser::get_capture()
                 {
                     mov_to_next_token();
                     assert(get_cur_token());
-                    return static_cast<tree_node*>(new id_node(nullptr, nullptr, nullptr, 0));
+                    return new id_node(nullptr, nullptr, nullptr, 0);
                 }
                 else
                 {
@@ -744,8 +672,8 @@ tree_node* parser::get_if()
                 if (get_cur_token()->get_type() == ENDIF_LEX)
                 {
                     mov_to_next_token();
-                    tmp_2 = new tree_node(tmp_2, tmp_1);
-                    tmp = static_cast<tree_node*>(new if_node(tmp, tmp_2));
+                    tmp_2 = new connection_node(tmp_2, tmp_1);
+                    tmp = new if_node(tmp, tmp_2);
                     return tmp;
                 }
                 else
@@ -769,8 +697,8 @@ tree_node* parser::get_if()
                 if (get_cur_token()->get_type() == ENDIF_LEX)
                 {
                     mov_to_next_token();
-                    tmp_1 = new tree_node(tmp_1, nullptr);
-                    tmp = static_cast<tree_node*>(new if_node(tmp, tmp_1));
+                    tmp_1 = new connection_node(tmp_1, nullptr);
+                    tmp = new if_node(tmp, tmp_1);
                     return tmp;
                 }
                 else
@@ -822,7 +750,7 @@ tree_node* parser::get_equality()
             delete tmp;
             return nullptr;
         }
-        tmp = static_cast<tree_node*>(new eq_node(tmp, tmp_1));
+        tmp = new eq_node(tmp, tmp_1);
         assert(get_cur_token());
         if (get_cur_token()->get_type() == END_OF_EXPR)
         {
@@ -859,7 +787,7 @@ tree_node* parser::get_equalities(bool open_scope)
             delete tmp;
             return nullptr;
         }
-        tmp = new tree_node(tmp, tmp_1);
+        tmp = new connection_node(tmp, tmp_1);
     }
     assert(get_cur_token());
     if (get_cur_token()->get_type() == FULL_STOP)

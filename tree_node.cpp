@@ -104,7 +104,7 @@ operator_node::operator_node(tree_node *lhs, tree_node *rhs, int type) :
                         exit(1);
         }
     }
-int operator_node::get_type() const {
+int operator_node::get_operator_type() const {
         return type_;
     }
 int operator_node::get_priority() const {
@@ -132,3 +132,35 @@ if_node::~if_node()
     clean_up();
 }
 
+node_type id_node:: get_type() const {
+    return ID_NODE;
+}
+
+node_type if_node:: get_type() const {
+    return IF_NODE;
+}
+
+node_type num_node:: get_type() const {
+    return NUM_NODE;
+}
+
+node_type eq_node:: get_type() const { 
+    return EQ_NODE;
+}
+
+node_type operator_node:: get_type() const {
+    return OP_NODE;
+}
+
+connection_node:: connection_node(tree_node *lhs, tree_node *rhs):
+tree_node(lhs, rhs)
+{}
+
+connection_node:: ~connection_node()
+{
+    clean_up();
+}
+
+node_type connection_node:: get_type() const {
+    return CONNECTION_NODE;
+}

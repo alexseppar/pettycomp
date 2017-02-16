@@ -4,11 +4,10 @@
 #define DEF_OP(name, num, code) \
     OP_##name = num,
 
-enum OP {
-    #include "cmd.h"
-};
+    enum OP {
+            #include "cmd.h"
+    };
 
 #undef DEF_OP
 
 #endif
-

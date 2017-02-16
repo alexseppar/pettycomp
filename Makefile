@@ -1,4 +1,5 @@
 CXXOPT =-std=c++11 -Wall -g3 ${ADD} 
+TEST = *.txt
 
 all: compile
 
@@ -15,6 +16,7 @@ interpretator.o: interpretator.cpp
 hash_table.o: hash_table.cpp
 	$(CXX) -c $(CXXOPT) hash_table.cpp
 all_test:
+	$(CXX) check.cpp -o check
 	cp answers.txt answ.txt
 	for i in 1 2 3 4 5 6 7; do ./calc ./test$$i.txt >> out$$i.txt; ./check out$$i.txt $$i; rm out$$i.txt; done
 	rm answ.txt 

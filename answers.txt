@@ -8,11 +8,8 @@
 
 error
 line 3: variable 'e' was not defined in this scope
-error
-line 3: variable 't' was not defined in this scope (in capture block)
 
 3.000000
 
 1.000000
-
 

@@ -34,13 +34,15 @@ class num_node final : public tree_node {
 
 class id_node final : public tree_node {
     const char  *name_;
-    unsigned    line_;
+    unsigned    line_,
+                pos_;
     public:
-    id_node(tree_node *lhs, tree_node *rhs, const char *name, unsigned line);
+    id_node(tree_node *lhs, tree_node *rhs, const char *name, unsigned line, unsigned pos);
     ~id_node();
     const char* get_name() const;
     void        set_rhs(tree_node *rhs);
     unsigned    get_line() const;
+    unsigned    get_pos() const;
     node_type   get_type() const override;
 };
 

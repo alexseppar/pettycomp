@@ -3,8 +3,8 @@ TEST = *.txt
 
 all: compile
 
-compile: main.o tree_node.o parser.o interpretator.o hash_table.o 
-	$(CXX) $(CXXOPT) main.o tree_node.o parser.o interpretator.o hash_table.o  -o calc
+compile: main.o tree_node.o parser.o interpretator.o hash_table.o lexer.o
+	$(CXX) $(CXXOPT) main.o tree_node.o parser.o interpretator.o hash_table.o lexer.o -o calc
 main.o: main.cpp
 	$(CXX) -c $(CXXOPT) main.cpp
 tree_node.o: tree_node.cpp
@@ -15,6 +15,8 @@ interpretator.o: interpretator.cpp
 	$(CXX) -c $(CXXOPT) interpretator.cpp
 hash_table.o: hash_table.cpp
 	$(CXX) -c $(CXXOPT) hash_table.cpp
+lexer.o: lexer.cpp
+	$(CXX) -c $(CXXOPT) lexer.cpp
 all_test:
 	$(CXX) check.cpp -o check
 	cp answers.txt answ.txt

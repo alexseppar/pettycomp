@@ -48,10 +48,11 @@ num_node::~num_node()
     clean_up();
 }
 
-id_node::id_node(tree_node *lhs, tree_node *rhs, const char *name, unsigned line) :
+id_node::id_node(tree_node *lhs, tree_node *rhs, const char *name, unsigned line, unsigned pos) :
     tree_node::tree_node(lhs, rhs),
     name_   (name),
-    line_   (line)
+    line_   (line),
+    pos_    (pos)
     {}
 
 const char* id_node::get_name() const {
@@ -64,6 +65,10 @@ void    id_node::set_rhs(tree_node *new_rhs) {
 
 unsigned    id_node::get_line() const {
     return line_;
+}
+
+unsigned id_node:: get_pos() const {
+    return pos_;
 }
 
 id_node::~id_node()

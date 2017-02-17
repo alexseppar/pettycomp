@@ -2,14 +2,16 @@
 
 3.000000
 
-5.000000
+error
+line 6, pos 5: variable 'a' was not defined in this scope
 
 2.000000
 
 error
-line 3: variable 'e' was not defined in this scope
+line 3, pos 3: variable 'e' was not defined in this scope
 
 3.000000
 
 1.000000
+
 

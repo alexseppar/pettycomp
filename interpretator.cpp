@@ -6,7 +6,7 @@
 #include <cstdlib>
 #include <cstring>
 
-static double calculate(tree_node *tree, scope &scope_, bool *err)
+static double calculate(tree_node *tree, hash_table &scope_, bool *err)
 {
     if (tree->get_type() == CONNECTION_NODE)
     {
@@ -21,11 +21,11 @@ static double calculate(tree_node *tree, scope &scope_, bool *err)
             fprintf(stderr, "%s = ", tmp_name);
         #endif
 
-        scope_[scope_.get_last()]->add(tmp_name, calculate(tree->get_rhs(), scope_, err));
+        scope_.add(tmp_name, calculate(tree->get_rhs(), scope_, err));
         
         #ifdef DEBUG__
             fprintf(stderr, ";\nvarlist:\n");
-            scope_[scope_.get_last()]->print_info();
+            scope_.print_info();
         #endif
         return 0;
     }
@@ -54,14 +54,15 @@ static double calculate(tree_node *tree, scope &scope_, bool *err)
     }
     else if (tree->get_type() == ID_NODE)
     {
-        list_mem *tmp = scope_[scope_.get_last()]->find_mem(static_cast<id_node*>(tree)->get_name());
+        list_mem *tmp = scope_.find_mem(static_cast<id_node*>(tree)->get_name());
         #ifdef DEBUG__
         fprintf(stderr, "%s ", static_cast<id_node*>(tree)->get_name());
         #endif
         if (tmp == nullptr)
         {
-            fprintf(stdout, "error\nline %u: variable '%s' was not defined in this scope\n", static_cast<id_node*>(tree)->get_line(),\
-                                static_cast<id_node*>(tree)->get_name());
+            id_node *tmp_id = static_cast<id_node*>(tree);
+            fprintf(stdout, "error\nline %u, pos %u: variable '%s' was not defined in this scope\n", tmp_id->get_line(),\
+                                                                                    tmp_id->get_pos(), tmp_id->get_name());
             exit(1);
         }
         else
@@ -79,45 +80,53 @@ static double calculate(tree_node *tree, scope &scope_, bool *err)
             #endif
             tree_node *tmp = tree->get_rhs()->get_rhs();
             if (tmp)
-            {
-                scope_.add_like_prev();
+            { 
+                id_node* tmp_ = static_cast<id_node*>(tmp);
+                hash_table new_scope_(100);
                 #ifdef DEBUG__
-                tree_node *tmp_ = tmp;
                 fprintf(stderr, "capture (");
+                #endif
                 while (tmp_)
                 {
-                    fprintf(stderr, "%s", static_cast<id_node*>(tmp_)->get_name());
-                    tmp_ = tmp_->get_rhs();
-                    if (tmp_)
-                        fprintf(stderr, ", ");
-                    else
+                    #ifdef DEBUG__
+                    fprintf(stderr, "%s", tmp_->get_name());
+                    #endif
+                    list_mem *tmp_list_mem = scope_.find_mem(tmp_->get_name());
+                    if (tmp_list_mem == nullptr)
                     {
-                        fprintf(stderr, ")\n");
-                        break;
-                    }
-                }
-                #endif
-            }
-            calculate(tree->get_rhs()->get_lhs(), scope_, err);
-            if (tmp)
-            {
-                list_mem *tmp_1;
-                const char *cur_name;
-                while (tmp)
-                { 
-                    cur_name = static_cast<id_node*>(tmp)->get_name();
-                    tmp_1 = scope_[scope_.get_last() - 1]->find_mem(cur_name);
-                    if (tmp_1)
-                        tmp_1->set_data(scope_[scope_.get_last()]->find_mem(cur_name)->get_data());
-                    else
-                    {
-                        fprintf(stdout, "error\nline %u: variable '%s' was not defined in this scope (in capture block)\n", \
-                                    static_cast<id_node*>(tmp)->get_line(), static_cast<id_node*>(tmp)->get_name());
+                        fprintf(stdout, "error\nline %u, pos %u: variable '%s' was not defined in this scope (in capture block)\n",\
+                                    tmp_->get_line(), tmp_->get_pos(), tmp_->get_name());
                         exit(1);
                     }
+                    else
+                    {
+                        new_scope_.add(tmp_->get_name(), tmp_list_mem->get_data());
+                        tmp_ = static_cast<id_node*>(tmp_->get_rhs());
+                        #ifdef DEBUG__
+                        if (tmp_)
+                            fprintf(stderr, ", ");
+                        else
+                        {
+                            fprintf(stderr, ")\n");
+                            break;
+                        }
+                        #endif
+                    }
+                } 
+                calculate(tree->get_rhs()->get_lhs(), new_scope_, err);
+                const char *cur_name;
+                while (tmp)
+                {
+                    cur_name = static_cast<id_node*>(tmp)->get_name();
+                    scope_.find_mem(cur_name)->set_data(new_scope_.find_mem(cur_name)->get_data()); 
                     tmp = tmp->get_rhs();
                 }
-                scope_.delete_last();
+                return 0;
+            }
+            else
+            {
+                calculate(tree->get_rhs()->get_lhs(), scope_, err);
+                return 0;
             }
             #ifdef DEBUG__
             fprintf(stderr, "endif\n");
@@ -138,11 +147,11 @@ static double calculate(tree_node *tree, scope &scope_, bool *err)
 bool interpretator::compute()
 {
     bool err = false;
-    scope scope_(10);
+    hash_table scope_(100);
     calculate(tree_, scope_, &err);
     if (!err)
     {
-        list_mem *tmp = scope_[0]->find_mem("result");
+        list_mem *tmp = scope_.find_mem("result");
         if (tmp)
         {
             answer_ = tmp->get_data();
@@ -169,17 +178,19 @@ static tree_node* copy_tree(tree_node *tree)
     if (tree->get_type() == CONNECTION_NODE)
         return new connection_node(copy_tree(tree->get_lhs()), copy_tree(tree->get_rhs()));
     else if (tree->get_type() == EQ_NODE)
-        return static_cast<tree_node*>(new eq_node(copy_tree(tree->get_lhs()), copy_tree(tree->get_rhs())));
+        return new eq_node(copy_tree(tree->get_lhs()), copy_tree(tree->get_rhs()));
     else if (tree->get_type() == NUM_NODE)
-        return static_cast<tree_node*>(new num_node(nullptr, nullptr, static_cast<num_node*>(tree)->get_data()));
+        return new num_node(nullptr, nullptr, static_cast<num_node*>(tree)->get_data());
     else if (tree->get_type() == ID_NODE)
-        return static_cast<tree_node*>(new id_node(nullptr, copy_tree(tree->get_rhs()),\
-                                            static_cast<id_node*>(tree)->get_name(), static_cast<id_node*>(tree)->get_line()));
+    {
+        id_node *tmp = static_cast<id_node*>(tree);
+        return new id_node(nullptr, copy_tree(tree->get_rhs()), tmp->get_name(), tmp->get_line(), tmp->get_pos());
+    }
     else if (tree->get_type() == OP_NODE)
-        return static_cast<tree_node*>\
-        (new operator_node(copy_tree(tree->get_lhs()), copy_tree(tree->get_rhs()), static_cast<operator_node*>(tree)->get_operator_type()));
+        return \
+        new operator_node(copy_tree(tree->get_lhs()), copy_tree(tree->get_rhs()), static_cast<operator_node*>(tree)->get_operator_type());
     else if (tree->get_type() == IF_NODE)
-        return static_cast<tree_node*>(new if_node(copy_tree(tree->get_lhs()), copy_tree(tree->get_rhs()))); 
+        return new if_node(copy_tree(tree->get_lhs()), copy_tree(tree->get_rhs())); 
     return nullptr;
 }
 
@@ -194,62 +205,4 @@ answer_     (0)
 interpretator::~interpretator()
 {
     delete tree_;
-}
-
-scope:: scope(unsigned size):
-size_   (size),
-last_   (0),
-tables_ (new hash_table*[size_]())
-{
-    tables_[0] = new hash_table(100);
-}
-
-scope:: ~scope()
-{
-    while (last_ != 0)
-        delete tables_[last_--];
-    delete tables_[last_--];
-    delete tables_;
-}
-
-void scope:: add_like_prev()
-{
-    if (last_ >= size_)
-    {
-        fprintf(stderr, "stack overflow \n");
-        exit(1);
-    }
-    else
-    {
-        tables_[last_ + 1] = new hash_table(*(tables_[last_]));
-        ++last_;
-    }
-}
-
-void scope:: add_new()
-{
-    if (last_ >= size_)
-    {
-        fprintf(stderr, "stack overflow \n");
-        exit(1);
-    }
-    else
-        tables_[++last_] = new hash_table(100);
-}
-
-void scope:: delete_last()
-{
-    delete tables_[last_];
-    tables_[last_--] = nullptr;
-}
-
-unsigned scope:: get_last() const
-{
-    return last_;
-}
-
-hash_table* scope:: operator[] (unsigned idx)
-{
-    assert(idx < size_);
-    return tables_[idx];
 }

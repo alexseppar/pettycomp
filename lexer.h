@@ -15,7 +15,9 @@ enum lex_type {
     IF_LEX,
     ENDIF_LEX,
     CAPTURE_LEX,
-    COMMA_LEX
+    COMMA_LEX,
+    WHILE_LEX,
+    ENDWHILE_LEX
 };
 
 class lexem final {

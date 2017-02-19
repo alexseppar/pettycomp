@@ -470,6 +470,90 @@ tree_node* parser::get_if()
     }
 }
 
+tree_node*  parser::get_while()
+{
+    tree_node *tmp, *tmp_1, *tmp_2;
+    if (get_cur_token()->get_type() == OPEN_BRACKET)
+    {
+        mov_to_next_token();       
+        tmp = get_expr();
+        if (tmp == nullptr)
+            return nullptr;
+        if (get_cur_token()->get_type() == CLOSE_BRACKET)
+        {
+            mov_to_next_token();
+            if (get_cur_token()->get_type() == CAPTURE_LEX)
+            {
+                mov_to_next_token();
+                tmp_1 = get_capture();
+                if (tmp_1 == nullptr)
+                {
+                    delete tmp;
+                    return nullptr;
+                }
+                tmp_2 = get_equalities(false);
+                if (tmp_2 == nullptr)
+                {
+                    delete tmp;
+                    delete tmp_1;
+                    return nullptr;
+                }
+                if (get_cur_token()->get_type() == ENDWHILE_LEX)
+                {
+                    mov_to_next_token();
+                    if (static_cast<id_node*>(tmp_1)->get_name() == nullptr)
+                        tmp_1 = nullptr;
+                    tmp_1 = new connection_node(tmp_2, tmp_1);
+                    tmp = new while_node(tmp, tmp_1);
+                    return tmp;
+                }
+                else
+                {
+                    fprintf(stdout, "error: expected 'endwhile' before\nline %u, pos %u: %s\n", LINE, POS, STR);
+                    delete tmp;
+                    delete tmp_1;
+                    delete tmp_2;
+                    return nullptr;
+                }
+            }
+            else
+            {
+                tmp_1 = get_equalities(false);
+                if (tmp_1 == nullptr)
+                {
+                    delete tmp;
+                    return nullptr;
+                }
+                if (get_cur_token()->get_type() == ENDWHILE_LEX)
+                {
+                    mov_to_next_token();
+                    tmp_1 = new connection_node(tmp_1, nullptr);
+                    tmp = new while_node(tmp, tmp_1);
+                    return tmp;
+                }
+                else
+                {
+                    fprintf(stdout, "error: expected 'endwhile' before\nline %u, pos %u: %s\n", LINE, POS, STR);
+                    delete tmp;
+                    delete tmp_1;
+                    return nullptr;
+                }
+            }
+        }
+        else
+        {
+            fprintf(stdout, "error: expected ')' after while-expr\nline %u, pos %u: %s\n", LINE, POS, STR);
+            delete tmp;
+            return nullptr;
+        }
+    }
+    else
+    {
+        fprintf(stdout, "error: expected '(' after 'while'\nline %u, pos %u: %s\n", LINE, POS, STR);
+        return nullptr;
+    }
+}
+
 tree_node* parser::get_equality()
 {
     tree_node *tmp;
@@ -480,6 +564,14 @@ tree_node* parser::get_equality()
         mov_to_next_token();
         assert(get_cur_token());
         tmp = get_if();
+        if (tmp == nullptr)
+            return nullptr;
+        return tmp;
+    }
+    else if (get_cur_token()->get_type() == WHILE_LEX)
+    {
+        mov_to_next_token();
+        tmp = get_while();
         if (tmp == nullptr)
             return nullptr;
         return tmp;
@@ -525,7 +617,8 @@ tree_node* parser::get_equalities(bool open_scope)
         return nullptr;
     assert(get_cur_token());
     while ( get_cur_token()->get_type() == ID_LEX ||
-            get_cur_token()->get_type() == IF_LEX)
+            get_cur_token()->get_type() == IF_LEX ||
+            get_cur_token()->get_type() == WHILE_LEX)
     {
         tree_node *tmp_1 = get_equality();
         if (tmp_1 == nullptr)
@@ -542,13 +635,14 @@ tree_node* parser::get_equalities(bool open_scope)
     {
         if (open_scope)
         {
-            fprintf(stderr, "error: expected id after last equality\nline %u, pos %u: %s\n", LINE, POS, STR);
+            fprintf(stderr, "error: expected id, if or while after last equality\nline %u, pos %u: %s\n", LINE, POS, STR);
             delete tmp;
             return nullptr;
         }
         else
         {
-            if (get_cur_token()->get_type() == ENDIF_LEX)
+            if (get_cur_token()->get_type() == ENDIF_LEX ||
+                get_cur_token()->get_type() == ENDWHILE_LEX)
                 return tmp;
             else
             {

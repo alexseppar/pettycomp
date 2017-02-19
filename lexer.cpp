@@ -189,6 +189,16 @@ void lexer::mov_to_next_token()
             }
             cur_name[len_count++] = *tmp++;
         }
+        #define CMP(name, LEX_TYPE)\
+        if (strcmp(cur_name, #name) == 0)\
+        {\
+            delete[] cur_name;\
+            delete cur_token_;\
+            cur_token_ = new lexem(LEX_TYPE, cur_line_, ++lex_count_);\
+            cur_position_ = tmp - info_;\
+            return;\
+        }
+
         if (strcmp(cur_name, "sin") == 0)
         {
             delete[] cur_name;
@@ -207,35 +217,17 @@ void lexer::mov_to_next_token()
             cur_position_ = tmp - info_;
             return;
         }
-        if (strcmp(cur_name, "if") == 0)
-        {
-            delete[] cur_name;
-            delete cur_token_;
-            cur_token_ = new lexem(IF_LEX, cur_line_, ++lex_count_);
-            cur_position_ = tmp - info_;
-            return;
-        }
-        if (strcmp(cur_name, "endif") == 0)
-        {
-            delete[] cur_name;
-            delete cur_token_;
-            cur_token_ = new lexem(ENDIF_LEX, cur_line_, ++lex_count_);
-            cur_position_ = tmp - info_;
-            return;
-        }
-        if (strcmp(cur_name, "capture") == 0)
-        {
-            delete[] cur_name;
-            delete cur_token_;
-            cur_token_ = new lexem(CAPTURE_LEX, cur_line_, ++lex_count_);
-            cur_position_ = tmp - info_;
-            return;
-        }
+        CMP(if, IF_LEX)
+        CMP(endif, ENDIF_LEX)
+        CMP(capture, CAPTURE_LEX)
+        CMP(while, WHILE_LEX)
+        CMP(endwhile, ENDWHILE_LEX)
+        #undef CMP 
         delete cur_token_;
         cur_position_ = tmp - info_;
         cur_token_ = new lexem(ID_LEX, cur_line_, ++lex_count_);
         cur_token_->set_name(cur_name);
-        return;
+        return; 
     }
     #define ROUTINE \
     ++tmp;\
@@ -286,6 +278,8 @@ void lexer::mov_to_next_token()
         cur_token_ = new lexem(FULL_STOP, cur_line_, lex_count_);
         return;
     }
+    delete cur_token_;
     fprintf(stderr, "error (umknown symbol)\nline %u, pos %u: %s\n", cur_line_, lex_count_, cur_str_);
     cur_token_ = nullptr; 
+    exit(1);
 }

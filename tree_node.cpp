@@ -157,6 +157,19 @@ node_type operator_node:: get_type() const {
     return OP_NODE;
 }
 
+node_type while_node:: get_type() const {
+    return WHILE_NODE;
+}
+
+while_node:: while_node(tree_node *lhs, tree_node *rhs):
+tree_node(lhs, rhs)
+{}
+
+while_node:: ~while_node()
+{
+    clean_up();
+}
+
 connection_node:: connection_node(tree_node *lhs, tree_node *rhs):
 tree_node(lhs, rhs)
 {}

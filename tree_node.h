@@ -7,7 +7,8 @@ enum node_type {
     NUM_NODE,
     CONNECTION_NODE,
     EQ_NODE,
-    IF_NODE
+    IF_NODE,
+    WHILE_NODE
 };
 
 class tree_node {
@@ -76,6 +77,13 @@ class connection_node final : public tree_node {
     connection_node(tree_node *lhs, tree_node *rhs);
     ~connection_node();
     node_type   get_type() const override;
+};
+
+class while_node final : public tree_node {
+    public:
+    while_node(tree_node *lhs, tree_node *rhs);
+    ~while_node();
+    node_type get_type() const override;
 };
 
 #endif

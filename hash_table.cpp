@@ -1,6 +1,7 @@
 #include "hash_table.h"
 #include <cstring>
 #include <cstdio>
+#include <cassert>
 
 list_mem::list_mem(const char *name, double data, list_mem *next) :
     name_   (name),
@@ -33,19 +34,20 @@ void list_mem::set_data(double data) {
     }
 
 unsigned hash_table::hash(const char *str) const
+{
+    assert(str);
+    unsigned hash = 0;
+    for (; *str; str++)
     {
-        unsigned hash = 0;
-        for (; *str; str++)
-        {
-            hash += (unsigned char)(*str);
-            hash += (hash << 10);
-            hash ^= (hash >> 6);
-        }
-        hash += (hash << 3);
-        hash ^= (hash >> 11);
-        hash += (hash << 15);
-        return hash;
+        hash += (unsigned char)(*str);
+        hash += (hash << 10);
+        hash ^= (hash >> 6);
     }
+    hash += (hash << 3);
+    hash ^= (hash >> 11);
+    hash += (hash << 15);
+    return hash;
+}
 
 hash_table::hash_table(unsigned size) :
     size_   (size)

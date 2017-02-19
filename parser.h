@@ -9,6 +9,7 @@ class parser final {
     lexer       lxr_;
     tree_node   *tree_;
     unsigned    last_line_;
+    tree_node*  get_while           ();
     tree_node*  get_if              ();
     tree_node*  get_capture         ();
     tree_node*  get_trig            ();

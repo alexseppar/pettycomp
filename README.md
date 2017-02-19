@@ -1,3 +1,3 @@
 # pettycomp
-Petty compiler counts a bit.
+Petty interpreter counts a bit.
 Compile with -DDEBUG__ to run with proccess information

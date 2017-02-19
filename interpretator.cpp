@@ -117,10 +117,24 @@ static double calculate(tree_node *tree, hash_table &scope_, bool *err)
     }
     else if (tree->get_type() == WHILE_NODE)
     {
+        #ifdef DEBUG__
+        fprintf(stderr, "while (");
+        #endif
         if (tree->get_rhs()->get_rhs() == nullptr)
         {
             while (calculate(tree->get_lhs(), scope_, err))
+            {   
+                #ifdef DEBUG__
+                fprintf(stderr, ")\n");
+                #endif
                 calculate(tree->get_rhs()->get_lhs(), scope_, err); 
+                #ifdef DEBUG__
+                fprintf(stderr, "while (");
+                #endif
+            }
+            #ifdef DEBUG__
+            fprintf(stderr, ")\n");
+            #endif
             return 0;
         }
         else
@@ -156,15 +170,44 @@ static double calculate(tree_node *tree, hash_table &scope_, bool *err)
             }
             while (calculate(tree->get_lhs(), scope_, err))
             {
+                #ifdef DEBUG__
+                fprintf(stderr, ") capture (");
+                tmp_1 = static_cast<id_node*>(tree->get_rhs()->get_rhs());
+                while (tmp_1)
+                {
+                    fprintf(stderr, "%s", tmp_1->get_name());
+                    tmp_1 = static_cast<id_node*>(tmp_1->get_rhs());
+                    if (tmp_1)
+                        fprintf(stderr, ", ");
+                    else
+                        fprintf(stderr, ")\n");
+                }
+                #endif
                 calculate(tree->get_rhs()->get_lhs(), new_scope_, err);
+                #ifdef DEBUG__
+                fprintf(stderr, "while (");
+                #endif
                 tmp = LIST; 
                 while (tmp->get_next())
                 {
                     list_mem *cur_id = new_scope_.find_mem(tmp->get_name());
                     scope_.add(tmp->get_name(), cur_id->get_data());
                     tmp = tmp->get_next();
-                }
+                } 
             }
+            #ifdef DEBUG__
+            fprintf(stderr, ") capture (");
+            tmp_1 = static_cast<id_node*>(tree->get_rhs()->get_rhs());
+            while (tmp_1)
+            {
+                fprintf(stderr, "%s", tmp_1->get_name());
+                tmp_1 = static_cast<id_node*>(tmp_1->get_rhs());
+                if (tmp_1)
+                    fprintf(stderr, ", ");
+                else
+                    fprintf(stderr, ")\n");
+            }
+            #endif
             tmp_1 = static_cast<id_node*>(tree->get_rhs()->get_rhs());
             while (tmp_1)
             {

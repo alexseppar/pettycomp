@@ -13,6 +13,18 @@
 
 #define STR get_cur_str()
 
+struct node_holder {
+    private:
+    tree_node *node_;
+    public:
+    node_holder(tree_node *node = nullptr): node_ (node) {}
+    node_holder(node_holder &&rhs): node_ (rhs.node_) { rhs.node_ = nullptr; }
+    ~node_holder() { if (node_ != nullptr) delete node_; }
+    node_holder& operator= (node_holder &&rhs) { node_ = rhs.node_; rhs.node_ = nullptr; return *this; }
+    tree_node* release() { tree_node *tmp = node_; node_ = nullptr; return tmp; }
+    bool is_null() const { return node_ ? false : true; }
+};
+
 tree_node* parser::get_trig()
 {
     if (get_cur_token()->get_type() == OP_LEX)
@@ -232,8 +244,8 @@ tree_node* parser::get_term()
 
 tree_node* parser::get_expr()
 {
-    tree_node *tmp = get_term();
-    if (tmp == nullptr)
+    node_holder term = get_term();
+    if (term.is_null())
         return nullptr;
     assert(get_cur_token());
     while (get_cur_token()->get_type() == OP_LEX &&
@@ -244,50 +256,39 @@ tree_node* parser::get_expr()
     {
         char type = get_cur_token()->get_operator_type();
         mov_to_next_token();
-        tree_node *tmp_1 = get_term();
-        if (tmp_1 == nullptr)
-        {
-            delete tmp;
+        node_holder newterm = get_term();
+        if (newterm.is_null())
             return nullptr;
-        }
-        tmp = new operator_node(tmp, tmp_1, type);
+        node_holder newop = new operator_node(term.release(), newterm.release(), type); 
+        term = std::move(newop);
         assert(get_cur_token());
     }
     if (get_cur_token()->get_type() == OP_LEX &&
         get_cur_token()->get_operator_type() == '?')
     {
         mov_to_next_token();
-        tree_node *tmp_1 = get_expr();
-        if (tmp_1 == nullptr)
-        {
-            delete tmp;
+        node_holder expr = get_expr();
+        if (expr.is_null())
             return nullptr;
-        }
         assert(get_cur_token());
         if (get_cur_token()->get_type() == OP_LEX &&
             get_cur_token()->get_operator_type() == ':')
         {
             mov_to_next_token();
-            tree_node *tmp_2 = get_expr();
-            if (tmp_2 == nullptr)
-            {
-                delete tmp;
-                delete tmp_1;
+            node_holder expr_2 = get_expr();
+            if (expr_2.is_null())
                 return nullptr;
-            }
-            tmp_1 = new connection_node(tmp_1, tmp_2);
-            tmp = new operator_node(tmp, tmp_1, '?');
-            return tmp;
+            node_holder connect = new connection_node(expr.release(), expr_2.release());
+            node_holder newop = new operator_node(term.release(), connect.release(), '?');
+            return newop.release();
         }
         else
         {
-            delete tmp_1;
-            delete tmp;
             fprintf(stderr, "error: expected ':' after '?' with following expr\nline %u, pos %u: %s\n", LINE, POS, STR);
             return nullptr;
         }
     }
-    return tmp;
+    return term.release();
 }
 
 tree_node* parser::get_capture()
@@ -380,14 +381,13 @@ tree_node* parser::get_capture()
 }
 
 tree_node* parser::get_if()
-{
-    tree_node *tmp, *tmp_1, *tmp_2;
+{ 
     if (get_cur_token()->get_type() == OPEN_BRACKET)
     {
         mov_to_next_token();
         assert(get_cur_token());
-        tmp = get_expr();
-        if (tmp == nullptr)
+        node_holder expr = get_expr();
+        if (expr.is_null())
             return nullptr;
         assert(get_cur_token());
         if (get_cur_token()->get_type() == CLOSE_BRACKET)
@@ -398,60 +398,43 @@ tree_node* parser::get_if()
             {
                 mov_to_next_token();
                 assert(get_cur_token());
-                tmp_1 = get_capture();
-                if (tmp_1 == nullptr)
-                {
-                    delete tmp;
+                node_holder capture = get_capture();
+                if (capture.is_null())
                     return nullptr;
-                }
-                if (static_cast<id_node*>(tmp_1)->get_name() == nullptr)
-                    tmp_1 = nullptr;
                 assert(get_cur_token());
-                tmp_2 = get_equalities(false);
-                if (tmp_2 == nullptr)
-                {
-                    delete tmp;
-                    delete tmp_1;
+                node_holder equalities = get_equalities(false);
+                if (equalities.is_null())
                     return nullptr;
-                }
                 assert(get_cur_token());
                 if (get_cur_token()->get_type() == ENDIF_LEX)
                 {
                     mov_to_next_token();
-                    tmp_2 = new connection_node(tmp_2, tmp_1);
-                    tmp = new if_node(tmp, tmp_2);
-                    return tmp;
+                    node_holder connect = new connection_node(equalities.release(), capture.release());
+                    node_holder newif = new if_node(expr.release(), connect.release());
+                    return newif.release();
                 }
                 else
                 { 
                     fprintf(stderr, "error: no endif operator\nline %u, pos %u:  %s\n", LINE, POS, STR);
-                    delete tmp;
-                    delete tmp_1;
-                    delete tmp_2;
                     return nullptr;
                 }
             }
             else
             {
-                tmp_1 = get_equalities(false);
-                if (tmp_1 == nullptr)
-                {
-                    delete tmp;
+                node_holder equalities = get_equalities(false);
+                if (equalities.is_null())
                     return nullptr;
-                }
                 assert(get_cur_token());
                 if (get_cur_token()->get_type() == ENDIF_LEX)
                 {
                     mov_to_next_token();
-                    tmp_1 = new connection_node(tmp_1, nullptr);
-                    tmp = new if_node(tmp, tmp_1);
-                    return tmp;
+                    node_holder connect = new connection_node(equalities.release(), nullptr);
+                    node_holder newif = new if_node(expr.release(), connect.release());
+                    return newif.release();
                 }
                 else
                 {
                     fprintf(stderr, "error: no endif operator\nline %u, pos %u: %s\n", LINE, POS, STR);
-                    delete tmp; 
-                    delete tmp_1;
                     return nullptr;
                 }
             }
@@ -459,7 +442,6 @@ tree_node* parser::get_if()
         else
         {
             fprintf(stderr, "error: expected ')' after if-expr\nline %u, pos %u: %s\n", LINE, POS, STR);
-            delete tmp;
             return nullptr;
         }
     }
@@ -472,12 +454,11 @@ tree_node* parser::get_if()
 
 tree_node*  parser::get_while()
 {
-    tree_node *tmp, *tmp_1, *tmp_2;
     if (get_cur_token()->get_type() == OPEN_BRACKET)
     {
         mov_to_next_token();       
-        tmp = get_expr();
-        if (tmp == nullptr)
+        node_holder expr = get_expr();
+        if (expr.is_null())
             return nullptr;
         if (get_cur_token()->get_type() == CLOSE_BRACKET)
         {
@@ -485,57 +466,40 @@ tree_node*  parser::get_while()
             if (get_cur_token()->get_type() == CAPTURE_LEX)
             {
                 mov_to_next_token();
-                tmp_1 = get_capture();
-                if (tmp_1 == nullptr)
-                {
-                    delete tmp;
+                node_holder capture = get_capture();
+                if (capture.is_null())
                     return nullptr;
-                }
-                tmp_2 = get_equalities(false);
-                if (tmp_2 == nullptr)
-                {
-                    delete tmp;
-                    delete tmp_1;
+                node_holder equalities = get_equalities(false);
+                if (equalities.is_null())
                     return nullptr;
-                }
                 if (get_cur_token()->get_type() == ENDWHILE_LEX)
                 {
                     mov_to_next_token();
-                    if (static_cast<id_node*>(tmp_1)->get_name() == nullptr)
-                        tmp_1 = nullptr;
-                    tmp_1 = new connection_node(tmp_2, tmp_1);
-                    tmp = new while_node(tmp, tmp_1);
-                    return tmp;
+                    node_holder connect = new connection_node(equalities.release(), capture.release());
+                    node_holder newwhile = new while_node(expr.release(), connect.release());
+                    return newwhile.release();
                 }
                 else
                 {
                     fprintf(stdout, "error: expected 'endwhile' before\nline %u, pos %u: %s\n", LINE, POS, STR);
-                    delete tmp;
-                    delete tmp_1;
-                    delete tmp_2;
                     return nullptr;
                 }
             }
             else
             {
-                tmp_1 = get_equalities(false);
-                if (tmp_1 == nullptr)
-                {
-                    delete tmp;
+                node_holder equalities = get_equalities(false);
+                if (equalities.is_null())
                     return nullptr;
-                }
                 if (get_cur_token()->get_type() == ENDWHILE_LEX)
                 {
                     mov_to_next_token();
-                    tmp_1 = new connection_node(tmp_1, nullptr);
-                    tmp = new while_node(tmp, tmp_1);
-                    return tmp;
+                    node_holder connect = new connection_node(equalities.release(), nullptr);
+                    node_holder newwhile = new while_node(expr.release(), connect.release());
+                    return newwhile.release();
                 }
                 else
                 {
                     fprintf(stdout, "error: expected 'endwhile' before\nline %u, pos %u: %s\n", LINE, POS, STR);
-                    delete tmp;
-                    delete tmp_1;
                     return nullptr;
                 }
             }
@@ -543,7 +507,6 @@ tree_node*  parser::get_while()
         else
         {
             fprintf(stdout, "error: expected ')' after while-expr\nline %u, pos %u: %s\n", LINE, POS, STR);
-            delete tmp;
             return nullptr;
         }
     }

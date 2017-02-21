@@ -120,7 +120,7 @@ static double calculate(tree_node *tree, hash_table &scope_, bool *err)
         #ifdef DEBUG__
         fprintf(stderr, "while (");
         #endif
-        if (tree->get_rhs()->get_rhs() == nullptr)
+        if (tree->get_rhs()->get_rhs() == nullptr || static_cast<id_node*>(tree->get_rhs()->get_rhs())->get_name() == nullptr)
         {
             while (calculate(tree->get_lhs(), scope_, err))
             {   
@@ -229,7 +229,7 @@ static double calculate(tree_node *tree, hash_table &scope_, bool *err)
             fprintf(stderr, ") ");
             #endif
             tree_node *tmp = tree->get_rhs()->get_rhs();
-            if (tmp)
+            if (tmp && static_cast<id_node*>(tmp)->get_name() != nullptr)
             { 
                 id_node* tmp_ = static_cast<id_node*>(tmp);
                 hash_table new_scope_(100);

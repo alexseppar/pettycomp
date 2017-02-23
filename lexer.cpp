@@ -266,7 +266,33 @@ void lexer::mov_to_next_token()
     {
         delete cur_token_;
         cur_token_ = new lexem(OP_LEX, cur_line_, ++lex_count_);
-        cur_token_->set_op_type(static_cast<OP>(*tmp++));
+        if (*(tmp + 1) == '=')
+        {
+            switch(*tmp)
+            {
+                case '+':   cur_token_->set_op_type(OP_addeq);
+                            tmp += 2;
+                            break;
+                case '-':   cur_token_->set_op_type(OP_subeq);
+                            tmp += 2;
+                            break; 
+                case '*':   cur_token_->set_op_type(OP_muleq);
+                            tmp += 2;
+                            break; 
+                case '/':   cur_token_->set_op_type(OP_diveq);
+                            tmp += 2;
+                            break; 
+                case '<':   cur_token_->set_op_type(OP_lesseq);
+                            tmp += 2;
+                            break; 
+                case '>':   cur_token_->set_op_type(OP_moreeq);
+                            tmp += 2;
+                            break; 
+                default:    cur_token_->set_op_type(static_cast<OP>(*tmp++));
+            }
+        }
+        else
+            cur_token_->set_op_type(static_cast<OP>(*tmp++));
         cur_position_ = tmp - info_;
         return;
     }

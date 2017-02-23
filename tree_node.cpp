@@ -1,4 +1,5 @@
 #include "tree_node.h"
+#include "op_enum.h"
 #include <cstdio>
 #include <cstdlib>
 
@@ -93,9 +94,9 @@ operator_node::operator_node(tree_node *lhs, tree_node *rhs, int type) :
                         break;
             case '^':   priority_ = 3;
                         break;
-            case 18:    priority_ = 2;
+            case OP_sinus:    priority_ = 2;
                         break;
-            case 19:    priority_ = 2;
+            case OP_cosinus:    priority_ = 2;
                         break;
             case '?':   priority_ = 0;
                         break;
@@ -105,6 +106,19 @@ operator_node::operator_node(tree_node *lhs, tree_node *rhs, int type) :
                         break;
             case '>':   priority_ = 0;
                         break;
+            case OP_lesseq:   priority_ = 0;
+                        break;
+            case OP_moreeq:   priority_ = 0;
+                        break;
+            case OP_muleq: priority_ = 0;
+                        break;
+            case OP_subeq: priority_ = 0;
+                        break;
+            case OP_addeq: priority_ = 0;
+                        break;
+            case OP_diveq: priority_ = 0;
+                        break;
+            
             default:    fprintf(stderr, "unknown error \n");
                         exit(1);
         }

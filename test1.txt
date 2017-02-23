@@ -4,7 +4,7 @@ c = 3;
 max = a;
 if (max < b) 
     max = b;
-endif
+endif;
 if (max < c)
     max = c;
 endif

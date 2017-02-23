@@ -117,6 +117,7 @@ void hash_table::add(const char *name, double data)
             list_mem *tmp;
             if ((tmp = find_mem(name)) == nullptr)
             {
+                tmp = table_[hash(name) % size_];
                 while(tmp->get_next())
                     tmp = tmp->get_next();
                 tmp->set_next(new list_mem(name, data));

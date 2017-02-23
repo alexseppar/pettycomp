@@ -26,11 +26,50 @@ if (open_bracket)\
     return lhs operation rhs;}\
 while (0)
 
-
+#define OP_EQ(operation) do {\
+    id_node *cur_node = static_cast<id_node*>(tree->get_lhs());\
+    list_mem *tmp = scope_.find_mem(cur_node->get_name());\
+    if (tmp != nullptr)\
+    {\
+        fprintf(stderr, "%s ", #operation);\
+        double res = calculate(tree->get_rhs(), scope_, err);\
+        scope_.add(cur_node->get_name(), tmp->get_data() operation res);\
+        return 0;\
+    }\
+    else\
+    {\
+        fprintf(stdout, "error\nline %u, pos %u: variable '%s' has to be declared\n", cur_node->get_line(), cur_node->get_pos(), \
+                                                                                        cur_node->get_name());\
+        exit(1);\
+    }\
+    } while (0)
+#else 
+#define OP_EQ(operation) do {\
+    id_node *cur_node = static_cast<id_node*>(tree->get_lhs());\
+    list_mem *tmp = scope_.find_mem(cur_node->get_name());\
+    if (tmp != nullptr)\
+    {\
+        scope_.add(cur_node->get_name(), tmp->get_data() operation calculate(tree->get_rhs(), scope_, err));\
+        return 0;\
+    }\
+    else\
+    {\
+        fprintf(stdout, "error\nline %u, pos %u: variable '%s' has to be declared\n", cur_node->get_line(), cur_node->get_pos(), \
+                                                                                        cur_node->get_name());\
+        exit(1);\
+    }\
+    } while (0)
 #endif
+
 
 #define SIN 18
 #define COS 19
+#define LEQ 20
+#define MEQ 21
+#define ADDEQ 22
+#define SUBEQ 23
+#define DIVEQ 24
+#define MULEQ 25
 
 DEF_OP(sum, '+', { 
     #ifdef DEBUG__
@@ -153,3 +192,44 @@ DEF_OP(less, '<', {
     return static_cast<double>(calculate(tree->get_lhs(), scope_, err) < calculate(tree->get_rhs(), scope_, err));   
     #endif
 })
+DEF_OP(lesseq, LEQ, {
+    #ifdef DEBUG__
+    double lhs = calculate(tree->get_lhs(), scope_, err);
+    fprintf(stderr, "<= ");
+    double rhs = calculate(tree->get_rhs(), scope_, err);
+    return static_cast<double>(lhs <= rhs); 
+    #else
+    return static_cast<double>(calculate(tree->get_lhs(), scope_, err) <= calculate(tree->get_rhs(), scope_, err));
+    #endif
+})
+DEF_OP(moreeq, MEQ, {
+    #ifdef DEBUG__
+    double lhs = calculate(tree->get_lhs(), scope_, err);
+    fprintf(stderr, ">= ");
+    double rhs = calculate(tree->get_rhs(), scope_, err);
+    return static_cast<double>(lhs >= rhs); 
+    #else
+    return static_cast<double>(calculate(tree->get_lhs(), scope_, err) >= calculate(tree->get_rhs(), scope_, err));
+    #endif
+})
+DEF_OP(addeq, ADDEQ, {
+    OP_EQ(+);
+})
+DEF_OP(subeq, SUBEQ, {
+    OP_EQ(-); 
+})
+DEF_OP(diveq, DIVEQ, {
+    OP_EQ(/);
+})
+DEF_OP(muleq, MULEQ, {
+    OP_EQ(*);
+})
+
+#undef SIN
+#undef LEQ
+#undef COS
+#undef MEQ
+#undef ADDEQ
+#undef SUBEQ
+#undef MULEQ
+#undef DIVEQ

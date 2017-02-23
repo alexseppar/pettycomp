@@ -86,7 +86,7 @@ static double calculate(tree_node *tree, hash_table &scope_, bool *err)
         {
             #include "cmd.h"
 
-            default:    fprintf(stdout, "unknown error\n");
+            default:    fprintf(stdout, "unknown error (switch in calculate)\n");
                         exit(1);
         }
         #undef DEF_OP
@@ -287,10 +287,10 @@ static double calculate(tree_node *tree, hash_table &scope_, bool *err)
     }
     else
     {
-        fprintf(stderr, "unknown error \n");
+        fprintf(stderr, "unknown error (unknown node)\n");
         exit(1);
     }
-    fprintf(stderr, "unknown error \n");
+    fprintf(stderr, "unknown error (unknown node)\n");
     exit(1);
 }
 

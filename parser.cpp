@@ -13,7 +13,7 @@
 
 #define STR get_cur_str()
 
-struct node_holder {
+struct node_holder final {
     private:
     tree_node *node_;
     public:
@@ -29,7 +29,6 @@ tree_node* parser::get_trig()
 {
     if (get_cur_token()->get_type() == OP_LEX)
     {
-        tree_node *tmp;
         switch (get_cur_token()->get_operator_type())
         {
             case OP_sinus:      mov_to_next_token();
@@ -37,20 +36,19 @@ tree_node* parser::get_trig()
                                 if (get_cur_token()->get_type() == OPEN_BRACKET)
                                 {
                                     mov_to_next_token();
-                                    tree_node *tmp_1 = get_expr();
-                                    if (tmp_1 == nullptr)
+                                    node_holder expr = get_expr();
+                                    if (expr.is_null())
                                         return nullptr;
-                                    tmp = new operator_node(tmp_1, nullptr, OP_sinus);
+                                    node_holder newop = new operator_node(expr.release(), nullptr, OP_sinus);
                                     assert(get_cur_token());
                                     if (get_cur_token()->get_type() == CLOSE_BRACKET)
                                     {
                                         mov_to_next_token();
-                                        return tmp;
+                                        return newop.release();
                                     }
                                     else
                                     {
                                         fprintf(stderr, "error: expected ')' after sin-expr\nline %u, pos %u: %s\n", LINE, POS, STR);
-                                        delete tmp;
                                         return nullptr;
                                     }
                                 }
@@ -64,20 +62,19 @@ tree_node* parser::get_trig()
                                 if (get_cur_token()->get_type() == OPEN_BRACKET)
                                 {
                                     mov_to_next_token();
-                                    tree_node *tmp_2 = get_expr();
-                                    if (tmp_2 == nullptr)
+                                    node_holder expr_2 = get_expr();
+                                    if (expr_2.is_null())
                                         return nullptr;
-                                    tmp = new operator_node(tmp_2, nullptr, OP_cosinus);
+                                    node_holder newop = new operator_node(expr_2.release(), nullptr, OP_cosinus);
                                     assert(get_cur_token());
                                     if (get_cur_token()->get_type() == CLOSE_BRACKET)
                                     {
                                         mov_to_next_token();
-                                        return tmp;
+                                        return newop.release();
                                     }
                                     else
                                     {
                                         fprintf(stderr, "error: expected ')' after cos-expr\nline %u, pos %u: %s\n", LINE, POS, STR);
-                                        delete tmp; 
                                         return nullptr;
                                     }
                                 }
@@ -101,9 +98,9 @@ tree_node* parser::get_num()
 {
     if (get_cur_token()->get_type() == NUM_LEX)
     {
-        tree_node *tmp = new num_node(nullptr, nullptr, get_cur_token()->get_val());
+        node_holder newnum = new num_node(nullptr, nullptr, get_cur_token()->get_val());
         mov_to_next_token();
-        return tmp;
+        return newnum.release();
     }
     else if (get_cur_token()->get_type() == OP_LEX &&
              get_cur_token()->get_operator_type() == '-')
@@ -111,9 +108,9 @@ tree_node* parser::get_num()
         mov_to_next_token();
         if (get_cur_token()->get_type() == NUM_LEX)
         {
-            tree_node *tmp = new num_node(nullptr, nullptr, get_cur_token()->get_val() * -1);
+            node_holder newnum = new num_node(nullptr, nullptr, get_cur_token()->get_val() * -1);
             mov_to_next_token();
-            return tmp;
+            return newnum.release();
         }
         else
         {
@@ -132,9 +129,9 @@ tree_node* parser::get_id()
 {
     if (get_cur_token()->get_type() == ID_LEX)
     {
-        tree_node *tmp = new id_node(nullptr, nullptr, get_cur_token()->get_name(), LINE, POS);
+        node_holder newid = new id_node(nullptr, nullptr, get_cur_token()->get_name(), LINE, POS);
         mov_to_next_token();
-        return tmp;
+        return newid.release();
     }
     else
     {
@@ -145,23 +142,22 @@ tree_node* parser::get_id()
 
 tree_node* parser::get_p()
 {
-    tree_node *tmp;
     assert(get_cur_token());
     if (get_cur_token()->get_type() == OPEN_BRACKET)
     {
         mov_to_next_token();
-        if ((tmp = get_expr()) == nullptr)
+        node_holder expr = get_expr();
+        if (expr.is_null())
             return nullptr;
         assert(get_cur_token());
         if (get_cur_token()->get_type() == CLOSE_BRACKET)
         {
             mov_to_next_token();
-            return tmp;
+            return expr.release();
         }
         else
         {
             fprintf(stderr, "error: expected ')' after expr\nline %u, pos %u: %s\n", LINE, POS, STR);
-            delete tmp;
             return nullptr;
         }
     }
@@ -170,18 +166,21 @@ tree_node* parser::get_p()
         assert(get_cur_token());
         if (get_cur_token()->get_type() == ID_LEX)
         {
-            if ((tmp = get_id()) == nullptr)
+            node_holder id = get_id();
+            if (id.is_null())
                 return nullptr;
-            return tmp;
+            return id.release();
         }
         else if (get_cur_token()->get_type() == NUM_LEX)
         {
-            if ((tmp = get_num()) == nullptr)
+            node_holder newnum = get_num();
+            if (newnum.is_null())
                 return nullptr;
-            return tmp;
+            return newnum.release();
         }
         else if (get_cur_token()->get_type() == OP_LEX)
         {
+            tree_node *tmp;
             if (get_cur_token()->get_operator_type() == '-')
                 tmp = get_num();
             else
@@ -200,29 +199,27 @@ tree_node* parser::get_p()
 
 tree_node* parser::get_pow()
 {
-    tree_node *tmp = get_p();
-    if (tmp == nullptr)
+    node_holder newp = get_p();
+    if (newp.is_null())
         return nullptr;
     assert(get_cur_token());
     while (get_cur_token()->get_type() == OP_LEX  &&
            get_cur_token()->get_operator_type() == '^')
     {
         mov_to_next_token();
-        tree_node *tmp_1 = get_p();
-        if (tmp_1 == nullptr)
-        {
-            delete tmp;
+        node_holder newp_2 = get_p();
+        if (newp.is_null())
             return nullptr;
-        }
-        tmp = new operator_node(tmp, tmp_1, '^');
+        node_holder newop = new operator_node(newp.release(), newp_2.release(), '^');
+        newp = std::move(newop);
     }
-    return tmp;
+    return newp.release();
 }
 
 tree_node* parser::get_term()
 {
-    tree_node* tmp = get_pow();
-    if (tmp == nullptr)
+    node_holder pow = get_pow();
+    if (pow.is_null())
         return nullptr;
     assert(get_cur_token());
     while (get_cur_token()->get_type() == OP_LEX  &&
@@ -231,15 +228,13 @@ tree_node* parser::get_term()
     {
         char type = get_cur_token()->get_operator_type();
         mov_to_next_token();
-        tree_node *tmp_1 = get_pow();
-        if (tmp_1 == nullptr)
-        {
-            delete tmp;
+        node_holder newpow = get_pow();
+        if (newpow.is_null())
             return nullptr;
-        }
-        tmp = new operator_node(tmp, tmp_1, type);
+        node_holder newop = new operator_node(pow.release(), newpow.release(), type);
+        pow = std::move(newop);
     }
-    return tmp;
+    return pow.release();
 }
 
 tree_node* parser::get_expr()
@@ -252,10 +247,12 @@ tree_node* parser::get_expr()
         (get_cur_token()->get_operator_type() == '+' ||
          get_cur_token()->get_operator_type() == '-' ||
          get_cur_token()->get_operator_type() == '<' ||
-         get_cur_token()->get_operator_type() == '>'))
+         get_cur_token()->get_operator_type() == '>' ||
+         get_cur_token()->get_operator_type() == OP_lesseq ||
+         get_cur_token()->get_operator_type() == OP_moreeq))
     {
         char type = get_cur_token()->get_operator_type();
-        mov_to_next_token();
+        mov_to_next_token(); 
         node_holder newterm = get_term();
         if (newterm.is_null())
             return nullptr;
@@ -519,98 +516,124 @@ tree_node*  parser::get_while()
 
 tree_node* parser::get_equality()
 {
-    tree_node *tmp;
+    node_holder tmp;
     if (get_cur_token()->get_type() == ID_LEX)
-        tmp = get_id();
+    {
+        node_holder newid = get_id();
+        tmp = std::move(newid);
+    }
     else if (get_cur_token()->get_type() == IF_LEX)
     {
         mov_to_next_token();
         assert(get_cur_token());
-        tmp = get_if();
-        if (tmp == nullptr)
+        node_holder newif = get_if();
+        if (newif.is_null())
             return nullptr;
-        return tmp;
+        return newif.release();
     }
     else if (get_cur_token()->get_type() == WHILE_LEX)
     {
         mov_to_next_token();
-        tmp = get_while();
-        if (tmp == nullptr)
+        node_holder newwhile = get_while();
+        if (newwhile.is_null())
             return nullptr;
-        return tmp;
+        return newwhile.release();
     }
-    if (tmp == nullptr)
+    if (tmp.is_null())
         return nullptr;
     assert(get_cur_token());
     if (get_cur_token()->get_type() == EQ_LEX)
     {
         mov_to_next_token();
-        tree_node *tmp_1 = get_expr();
-        if (tmp_1 == nullptr)
-        {
-            delete tmp;
+        node_holder expr = get_expr();
+        if (expr.is_null())
             return nullptr;
-        }
-        tmp = new eq_node(tmp, tmp_1);
-        assert(get_cur_token());
+        node_holder neweq = new eq_node(tmp.release(), expr.release());
         if (get_cur_token()->get_type() == END_OF_EXPR)
         {
             mov_to_next_token();
-            return tmp;
+            return neweq.release();
         }
         else
         {
             fprintf(stderr, "error: expected ';' in the end of expr\nline %u, pos %u: %s\n", LINE, POS, STR);
-            delete tmp;
+            return nullptr;
+        }
+    }
+    else if (get_cur_token()->get_type() == OP_LEX &&
+            (get_cur_token()->get_operator_type() == OP_muleq  ||
+             get_cur_token()->get_operator_type() == OP_diveq  ||
+             get_cur_token()->get_operator_type() == OP_addeq  ||
+             get_cur_token()->get_operator_type() == OP_subeq  ))
+    {
+        OP type = get_cur_token()->get_operator_type();
+        mov_to_next_token();
+        node_holder expr = get_expr();
+        if (expr.is_null())
+           return nullptr;
+        node_holder neweq = new operator_node(tmp.release(), expr.release(), type);
+        if (get_cur_token()->get_type() == END_OF_EXPR)
+        {
+            mov_to_next_token();
+            return neweq.release();
+        }
+        else
+        {
+            fprintf(stderr, "error: expected ';' in the end of expr\nline %u, pos %u: %s\n", LINE, POS, STR);
             return nullptr;
         }
     }
     else
     {
         fprintf(stderr, "error: expected '=' after variable\nline %u, pos %u: %s\n", LINE, POS, STR);
-        delete tmp;
         return nullptr;
     }
 }
 
 tree_node* parser::get_equalities(bool open_scope)
 {
-    tree_node *tmp = get_equality();
-    if (tmp == nullptr)
+    while (get_cur_token()->get_type() == END_OF_EXPR)
+        mov_to_next_token();
+    node_holder equality = get_equality();
+    if (equality.is_null())
         return nullptr;
-    assert(get_cur_token());
-    while ( get_cur_token()->get_type() == ID_LEX ||
-            get_cur_token()->get_type() == IF_LEX ||
-            get_cur_token()->get_type() == WHILE_LEX)
+    lex_type cur_type = get_cur_token()->get_type();
+    while ( cur_type == ID_LEX      ||
+            cur_type == IF_LEX      ||
+            cur_type == WHILE_LEX   ||
+            cur_type == END_OF_EXPR)
     {
-        tree_node *tmp_1 = get_equality();
-        if (tmp_1 == nullptr)
+        if (cur_type == END_OF_EXPR)
         {
-            delete tmp;
-            return nullptr;
+            mov_to_next_token();
+            cur_type = get_cur_token()->get_type();
+            continue;
         }
-        tmp = new connection_node(tmp, tmp_1);
+        node_holder newequality = get_equality();
+        if (newequality.is_null())
+            return nullptr;
+        node_holder newop = new connection_node(equality.release(), newequality.release());
+        equality = std::move(newop);
+        cur_type = get_cur_token()->get_type();
     }
     assert(get_cur_token());
     if (get_cur_token()->get_type() == FULL_STOP)
-        return tmp;
+        return equality.release();
     else
     {
         if (open_scope)
         {
             fprintf(stderr, "error: expected id, if or while after last equality\nline %u, pos %u: %s\n", LINE, POS, STR);
-            delete tmp;
             return nullptr;
         }
         else
         {
             if (get_cur_token()->get_type() == ENDIF_LEX ||
                 get_cur_token()->get_type() == ENDWHILE_LEX)
-                return tmp;
+                return equality.release();
             else
             {
                 fprintf(stderr, "UNKNOWN! \n");
-                delete tmp;
                 return nullptr;
             }
         }

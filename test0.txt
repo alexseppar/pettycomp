@@ -1,0 +1,19 @@
+quarterpi = 0;
+iterations = 1800000;
+count = 1;
+minus = -10;
+plus = 10;
+while ( count < iterations )
+    if (minus > 0)
+        quarterpi -= 1 / count;
+    endif;
+    if (plus > 0)
+        quarterpi += 1 / count;
+    endif;
+    tmp = minus;
+    minus = plus;
+    plus = tmp;
+    count += 2;
+endwhile;
+
+result = quarterpi * 4;

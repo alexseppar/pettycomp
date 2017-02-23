@@ -101,23 +101,7 @@ tree_node* parser::get_num()
         node_holder newnum = new num_node(nullptr, nullptr, get_cur_token()->get_val());
         mov_to_next_token();
         return newnum.release();
-    }
-    else if (get_cur_token()->get_type() == OP_LEX &&
-             get_cur_token()->get_operator_type() == '-')
-    {
-        mov_to_next_token();
-        if (get_cur_token()->get_type() == NUM_LEX)
-        {
-            node_holder newnum = new num_node(nullptr, nullptr, get_cur_token()->get_val() * -1);
-            mov_to_next_token();
-            return newnum.release();
-        }
-        else
-        {
-            fprintf(stderr, "error: expected num after unary minus\nline %u, pos %u: %s", LINE, POS, STR);
-            return nullptr;
-        }
-    }
+    } 
     else        
     {
         fprintf(stderr, "error: expected num\nline %u, pos %u: %s\n", LINE, POS, STR);
@@ -136,6 +120,45 @@ tree_node* parser::get_id()
     else
     {
         fprintf(stderr, "error: expected id\nline %u, pos %u: %s\n", LINE, POS, STR);
+        return nullptr;
+    }
+}
+
+tree_node* parser::get_unary_minus() 
+{
+    if (get_cur_token()->get_type() == OPEN_BRACKET)
+    {
+        mov_to_next_token();
+        node_holder expr = get_expr();
+        if (expr.is_null())
+            return nullptr;
+        if (get_cur_token()->get_type() == CLOSE_BRACKET)
+        {
+            mov_to_next_token();
+            node_holder newop = new operator_node(nullptr, expr.release(), OP_unary_minus);
+            return newop.release();
+        }
+        else
+        {
+            fprintf(stdout, "error: expected ')' after expr\nline %u, pos %u: %s\n", LINE, POS, STR);
+            return nullptr;
+        }
+    }
+    else if (get_cur_token()->get_type() == NUM_LEX)
+    {
+        node_holder num = get_num();
+        node_holder newop = new operator_node(nullptr, num.release(), OP_unary_minus);
+        return newop.release();
+    }
+    else if (get_cur_token()->get_type() == ID_LEX)
+    {
+        node_holder id = get_id();
+        node_holder newop = new operator_node(nullptr, id.release(), OP_unary_minus);
+        return newop.release();
+    }
+    else
+    {
+        fprintf(stdout, "error: expected (expr) , id or num\nline %u, pos %u: %s\n", LINE, POS, STR);
         return nullptr;
     }
 }
@@ -182,7 +205,10 @@ tree_node* parser::get_p()
         {
             tree_node *tmp;
             if (get_cur_token()->get_operator_type() == '-')
-                tmp = get_num();
+            {
+                mov_to_next_token();
+                tmp = get_unary_minus();
+            }
             else
                 tmp = get_trig();
             if (tmp == nullptr)

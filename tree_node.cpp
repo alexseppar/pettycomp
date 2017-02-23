@@ -106,19 +106,20 @@ operator_node::operator_node(tree_node *lhs, tree_node *rhs, int type) :
                         break;
             case '>':   priority_ = 0;
                         break;
-            case OP_lesseq:   priority_ = 0;
-                        break;
-            case OP_moreeq:   priority_ = 0;
-                        break;
+            case OP_lesseq: priority_ = 0;
+                            break;
+            case OP_moreeq: priority_ = 0;
+                            break;
             case OP_muleq: priority_ = 0;
-                        break;
+                           break;
             case OP_subeq: priority_ = 0;
-                        break;
+                           break;
             case OP_addeq: priority_ = 0;
-                        break;
+                           break;
             case OP_diveq: priority_ = 0;
-                        break;
-            
+                           break;
+            case OP_unary_minus: priority_ = 2; 
+                                 break;
             default:    fprintf(stderr, "unknown error \n");
                         exit(1);
         }

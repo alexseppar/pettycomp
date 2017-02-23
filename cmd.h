@@ -70,6 +70,7 @@ while (0)
 #define SUBEQ 23
 #define DIVEQ 24
 #define MULEQ 25
+#define UN_MINUS 26
 
 DEF_OP(sum, '+', { 
     #ifdef DEBUG__
@@ -224,7 +225,9 @@ DEF_OP(diveq, DIVEQ, {
 DEF_OP(muleq, MULEQ, {
     OP_EQ(*);
 })
-
+DEF_OP(unary_minus, UN_MINUS, {
+    return -1 * calculate(tree->get_rhs(), scope_, err);   
+})
 #undef SIN
 #undef LEQ
 #undef COS
@@ -232,4 +235,5 @@ DEF_OP(muleq, MULEQ, {
 #undef ADDEQ
 #undef SUBEQ
 #undef MULEQ
+#undef UN_MINUS
 #undef DIVEQ

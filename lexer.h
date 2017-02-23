@@ -32,8 +32,8 @@ class lexem final {
     public:
     lexem(lex_type type, unsigned line, unsigned pos);
     
-    lex_type    get_type() const;
-    const char* get_name() const;
+    lex_type    get_type() const { return type_; }
+    const char* get_name() const; 
     double      get_val() const;
     OP          get_operator_type() const;
     
@@ -41,8 +41,8 @@ class lexem final {
     void        set_op_type(OP op_type);
     void        set_name(const char* name);
     
-    unsigned    get_pos() const;
-    unsigned    get_line() const;
+    unsigned    get_pos() const { return pos_; }
+    unsigned    get_line() const { return line_; }
 };
 
 class lexer final {
@@ -56,8 +56,8 @@ class lexer final {
     explicit lexer(const char *file_name);
     ~lexer();
     void    mov_to_next_token();
-    lexem*  get_cur_token() const;
-    const char*   get_cur_str() const; 
+    lexem*  get_cur_token() const { return cur_token_; }
+    const char*   get_cur_str() const { return cur_str_; } 
 };
 
 #endif

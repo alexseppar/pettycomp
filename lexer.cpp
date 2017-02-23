@@ -16,18 +16,6 @@ line_   (line),
 pos_    (pos)
 {}
 
-lex_type lexem:: get_type() const {
-    return type_;
-}
-
-unsigned lexem:: get_pos() const {
-    return pos_;
-}
-
-unsigned lexem:: get_line() const {
-    return line_;
-}
-
 const char* lexem:: get_name() const
 {
     if (type_ == ID_LEX)
@@ -111,14 +99,6 @@ lexer::~lexer()
         delete cur_token_;
     if (cur_str_)
         delete[] cur_str_;
-}
-
-lexem* lexer::get_cur_token() const {
-    return cur_token_;
-}
-
-const char* lexer:: get_cur_str() const {
-    return cur_str_;
 }
 
 void lexer::mov_to_next_token()

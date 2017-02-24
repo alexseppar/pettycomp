@@ -6,6 +6,8 @@
 #include <cstdlib>
 #include <cstring>
 
+const unsigned SIGN = 666;
+
 class id_list final {
     const char  *name_;
     unsigned    line_,
@@ -121,21 +123,60 @@ static double calculate(tree_node *tree, hash_table &scope_, bool *err)
         fprintf(stderr, "while (");
         #endif
         if (tree->get_rhs()->get_rhs() == nullptr || static_cast<id_node*>(tree->get_rhs()->get_rhs())->get_name() == nullptr)
-        {
-            while (calculate(tree->get_lhs(), scope_, err))
-            {   
+        { 
+            if (tree->get_rhs()->get_rhs() != nullptr && static_cast<id_node*>(tree->get_rhs()->get_rhs())->get_line() == SIGN)
+            {
+                id_list empty;
+                id_list *LIST = get_id_list(tree->get_lhs(), &empty);
+                hash_table new_scope_(100);
+                id_list *tmp = LIST;
+                while (tmp->get_next())
+                {
+                    list_mem *cur_id = scope_.find_mem(tmp->get_name());
+                    if (cur_id == nullptr)
+                    {
+                        fprintf(stdout, "error\nline %u, pos %u: variable '%s' was not defined in this scope\n", tmp->get_line(), \
+                                                                                        tmp->get_pos(), tmp->get_name());
+                        exit(1);
+                    }
+                    new_scope_.add(tmp->get_name(), cur_id->get_data());
+                    tmp = tmp->get_next();
+                }
+                #ifdef DEBUG__
+                fprintf(stderr, "while ( ");
+                #endif
+                while (calculate(tree->get_lhs(), new_scope_, err))
+                {   
+                    #ifdef DEBUG__
+                    fprintf(stderr, ") capture()\n");
+                    #endif
+                    calculate(tree->get_rhs()->get_lhs(), new_scope_, err); 
+                    #ifdef DEBUG__
+                    fprintf(stderr, "while (");
+                    #endif
+                } 
+                #ifdef DEBUG__
+                fprintf(stderr, ") capture()\n");
+                #endif
+                return 0;
+            }
+            else
+            {
+                while (calculate(tree->get_lhs(), scope_, err))
+                {   
+                    #ifdef DEBUG__
+                    fprintf(stderr, ")\n");
+                    #endif
+                    calculate(tree->get_rhs()->get_lhs(), scope_, err); 
+                    #ifdef DEBUG__
+                    fprintf(stderr, "while (");
+                    #endif
+                } 
                 #ifdef DEBUG__
                 fprintf(stderr, ")\n");
                 #endif
-                calculate(tree->get_rhs()->get_lhs(), scope_, err); 
-                #ifdef DEBUG__
-                fprintf(stderr, "while (");
-                #endif
+                return 0;
             }
-            #ifdef DEBUG__
-            fprintf(stderr, ")\n");
-            #endif
-            return 0;
         }
         else
         {
@@ -168,7 +209,7 @@ static double calculate(tree_node *tree, hash_table &scope_, bool *err)
                 new_scope_.add(tmp_1->get_name(), cur_id->get_data());
                 tmp_1 = static_cast<id_node*>(tmp_1->get_rhs());
             }
-            while (calculate(tree->get_lhs(), scope_, err))
+            while (calculate(tree->get_lhs(), new_scope_, err))
             {
                 #ifdef DEBUG__
                 fprintf(stderr, ") capture (");
@@ -186,14 +227,7 @@ static double calculate(tree_node *tree, hash_table &scope_, bool *err)
                 calculate(tree->get_rhs()->get_lhs(), new_scope_, err);
                 #ifdef DEBUG__
                 fprintf(stderr, "while (");
-                #endif
-                tmp = LIST; 
-                while (tmp->get_next())
-                {
-                    list_mem *cur_id = new_scope_.find_mem(tmp->get_name());
-                    scope_.add(tmp->get_name(), cur_id->get_data());
-                    tmp = tmp->get_next();
-                } 
+                #endif 
             }
             #ifdef DEBUG__
             fprintf(stderr, ") capture (");
@@ -275,7 +309,13 @@ static double calculate(tree_node *tree, hash_table &scope_, bool *err)
             }
             else
             {
-                calculate(tree->get_rhs()->get_lhs(), scope_, err);
+                if (tmp && static_cast<id_node*>(tmp)->get_line() == SIGN)
+                {
+                    hash_table newscope_(100);
+                    calculate(tree->get_rhs()->get_lhs(), newscope_, err);
+                }
+                else
+                    calculate(tree->get_rhs()->get_lhs(), scope_, err);
                 return 0;
             }
             #ifdef DEBUG__

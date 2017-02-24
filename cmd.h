@@ -71,6 +71,7 @@ while (0)
 #define DIVEQ 24
 #define MULEQ 25
 #define UN_MINUS 26
+#define EQEQ 27
 
 DEF_OP(sum, '+', { 
     #ifdef DEBUG__
@@ -227,6 +228,16 @@ DEF_OP(muleq, MULEQ, {
 })
 DEF_OP(unary_minus, UN_MINUS, {
     return -1 * calculate(tree->get_rhs(), scope_, err);   
+})
+DEF_OP(equal, EQEQ, {
+    #ifdef DEBUG__
+    double lhs = calculate(tree->get_lhs(), scope_, err);
+    fprintf(stderr, "== ");
+    double rhs = calculate(tree->get_rhs(), scope_, err);
+    return static_cast<double>(lhs == rhs); 
+    #else
+    return static_cast<double>(calculate(tree->get_lhs(), scope_, err) == calculate(tree->get_rhs(), scope_, err));
+    #endif
 })
 #undef SIN
 #undef LEQ

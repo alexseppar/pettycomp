@@ -19,7 +19,7 @@ lexer.o: lexer.cpp
 all_test:
 	$(CXX) check.cpp -o check
 	cp answers.txt answ.txt
-	for i in 0 1 2 3 4 5 6 7; do ./calc ./test$$i.txt >> out$$i.txt; ./check out$$i.txt $$i; rm out$$i.txt; done
+	for i in 0 1 2 3 4 5 6 7 8 9; do ./calc ./test$$i.txt >> out$$i.txt; ./check out$$i.txt $$i; rm out$$i.txt; done
 	rm answ.txt 
 clean:
 	rm -rf *.o

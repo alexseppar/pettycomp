@@ -120,6 +120,8 @@ operator_node::operator_node(tree_node *lhs, tree_node *rhs, int type) :
                            break;
             case OP_unary_minus: priority_ = 2; 
                                  break;
+            case OP_equal: priority_ = 0;
+                           break;
             default:    fprintf(stderr, "unknown error \n");
                         exit(1);
         }

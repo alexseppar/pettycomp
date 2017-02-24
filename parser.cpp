@@ -25,6 +25,8 @@ struct node_holder final {
     bool is_null() const { return node_ ? false : true; }
 };
 
+const unsigned  SIGN  = 666;
+
 tree_node* parser::get_trig()
 {
     if (get_cur_token()->get_type() == OP_LEX)
@@ -275,7 +277,8 @@ tree_node* parser::get_expr()
          get_cur_token()->get_operator_type() == '<' ||
          get_cur_token()->get_operator_type() == '>' ||
          get_cur_token()->get_operator_type() == OP_lesseq ||
-         get_cur_token()->get_operator_type() == OP_moreeq))
+         get_cur_token()->get_operator_type() == OP_moreeq ||
+         get_cur_token()->get_operator_type() == OP_equal))
     {
         char type = get_cur_token()->get_operator_type();
         mov_to_next_token(); 
@@ -388,6 +391,11 @@ tree_node* parser::get_capture()
                     fprintf(stderr, "error: expected ')' at the end of \"capture\" block\nline %u, pos %u: %s\n", LINE, POS, STR);
                     return nullptr;
                 }
+            }
+            else if (get_cur_token()->get_type() == CLOSE_BRACKET)
+            {
+                mov_to_next_token();
+                return new id_node(nullptr, nullptr, nullptr, SIGN, 0);
             }
             else
             {
@@ -701,3 +709,4 @@ parser::~parser()
     if (tree_)
         delete tree_;
 }
+

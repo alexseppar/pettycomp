@@ -1,0 +1,9 @@
+a = 1;
+b = 10;
+c = 30;
+while (a < b) capture ()
+    a += 3;
+    b += 1;
+    c = 9;
+endwhile;
+result = c;

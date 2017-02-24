@@ -16,4 +16,8 @@ line 3, pos 3: variable 'e' was not defined in this scope
 
 1.000000
 
+0.000000
+
+30.000000
+
 

@@ -216,8 +216,19 @@ void lexer::mov_to_next_token()
     
     switch (static_cast<int>(*tmp))
     {
-        case '=':   ROUTINE
-                    cur_token_ = new lexem(EQ_LEX, cur_line_, ++lex_count_);
+        case '=':   delete cur_token_;
+                    if (*(tmp + 1) == '=')
+                    {
+                        cur_token_ = new lexem(OP_LEX, cur_line_, ++lex_count_);
+                        cur_token_->set_op_type(OP_equal);
+                        tmp += 2;
+                    }
+                    else
+                    {
+                        cur_token_ = new lexem(EQ_LEX, cur_line_, ++lex_count_);
+                        ++tmp;
+                    }
+                    cur_position_ = tmp - info_;
                     return;
         case '(':   ROUTINE
                     cur_token_ = new lexem(OPEN_BRACKET, cur_line_, ++lex_count_);
